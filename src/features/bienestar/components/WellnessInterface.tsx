@@ -1,0 +1,104 @@
+'use client'
+
+import { useEffect, useRef, useCallback } from 'react'
+import { useWellnessChat } from '../hooks/useWellnessChat'
+import { getWellnessMessages } from '../services/wellness-actions'
+import { WellnessMessage } from './WellnessMessage'
+import { WellnessInput } from './WellnessInput'
+import { WellnessConversationList } from './WellnessConversationList'
+import type { WellnessMessage as WellnessMessageType } from '../types'
+
+export function WellnessInterface() {
+  const { messages, status, conversationId, error, sendMessage, stopStreaming, loadConversation, newChat } = useWellnessChat()
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Auto scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  const handleSelectConversation = useCallback(async (id: string) => {
+    const msgs = await getWellnessMessages(id)
+    loadConversation(msgs as WellnessMessageType[], id)
+  }, [loadConversation])
+
+  return (
+    <div className="flex h-full">
+      {/* Sidebar - Conversation history */}
+      <div className="hidden w-64 shrink-0 border-r border-white/10 bg-gray-950/50 md:block">
+        <WellnessConversationList
+          activeId={conversationId}
+          onSelect={handleSelectConversation}
+          onNew={newChat}
+        />
+      </div>
+
+      {/* Main wellness area */}
+      <div className="flex flex-1 flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-3 border-b border-white/10 bg-gray-950/80 backdrop-blur-sm px-4 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-sm font-bold text-white">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold text-white">Bienestar</h2>
+            <p className="text-xs text-gray-500">Tu espacio de calma y apoyo emocional</p>
+          </div>
+        </div>
+
+        {/* Messages area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+          {messages.length === 0 && (
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center space-y-4 max-w-md">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/20">
+                  <svg className="h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-white">Hola, bienvenido a tu espacio de bienestar</h3>
+                <p className="text-sm text-gray-400">
+                  Este es un espacio tranquilo y seguro donde puedes hablar sobre tus emociones,
+                  el estres del dia a dia, o cualquier situacion que te preocupe. Estoy aqui para escucharte.
+                </p>
+                <div className="flex flex-wrap justify-center gap-2 pt-2">
+                  {[
+                    'Me siento estresado por mi proxima evaluacion',
+                    'Necesito tecnicas para manejar la ansiedad',
+                    'Como puedo balancear mi vida personal y el vuelo?',
+                  ].map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => sendMessage(q)}
+                      className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs text-emerald-300 hover:bg-emerald-500/20 transition-colors"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg) => (
+            <WellnessMessage key={msg.id} message={msg} />
+          ))}
+
+          {error && (
+            <div className="mx-auto max-w-md rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {error}
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <WellnessInput onSend={sendMessage} onStop={stopStreaming} status={status} />
+      </div>
+    </div>
+  )
+}
