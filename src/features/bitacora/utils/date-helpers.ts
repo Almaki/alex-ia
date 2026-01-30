@@ -203,3 +203,21 @@ export function formatDecimalHours(hours: number): string {
   const m = Math.round((hours - h) * 60)
   return `${h}:${String(Math.min(59, m)).padStart(2, '0')}`
 }
+
+/**
+ * Format time as Zulu: "HH:MMZ". Returns "--:--" for null/empty.
+ */
+export function formatZulu(time: string | null): string {
+  if (!time) return '--:--'
+  return `${formatHHMM(time)}Z`
+}
+
+/**
+ * Detect overnight duty: check_out time < check_in time means duty spans 2 days
+ */
+export function isOvernightDuty(checkIn: string | null, checkOut: string | null): boolean {
+  if (!checkIn || !checkOut) return false
+  const ciMinutes = timeToMinutes(formatHHMM(checkIn))
+  const coMinutes = timeToMinutes(formatHHMM(checkOut))
+  return coMinutes < ciMinutes
+}
