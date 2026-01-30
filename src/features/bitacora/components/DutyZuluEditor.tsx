@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { formatHHMM } from '../utils/date-helpers'
+import { useState, useMemo } from 'react'
+import { formatHHMM, getAirportUtcOffset, localToZulu } from '../utils/date-helpers'
 
 interface DutyZuluEditorProps {
   entryId: string
@@ -16,18 +16,41 @@ interface DutyZuluEditorProps {
 
 export function DutyZuluEditor({
   entryId,
+  checkIn,
+  checkOut,
   dutyStartZulu,
   dutyEndZulu,
+  originIATA,
   onSave,
 }: DutyZuluEditorProps) {
+  // Auto-compute Zulu from local times + airport UTC offset
+  const autoZulu = useMemo(() => {
+    if (!originIATA) return { start: null, end: null }
+    const offset = getAirportUtcOffset(originIATA)
+    return {
+      start: localToZulu(checkIn, offset),
+      end: localToZulu(checkOut, offset),
+    }
+  }, [checkIn, checkOut, originIATA])
+
+  // Use saved values if available, otherwise auto-computed
+  const effectiveStart = dutyStartZulu ? formatHHMM(dutyStartZulu) : (autoZulu.start ?? '--:--')
+  const effectiveEnd = dutyEndZulu ? formatHHMM(dutyEndZulu) : (autoZulu.end ?? '--:--')
+  const isAuto = !dutyStartZulu && !dutyEndZulu && (autoZulu.start || autoZulu.end)
+
   const [editing, setEditing] = useState(false)
-  const [startZ, setStartZ] = useState(formatHHMM(dutyStartZulu))
-  const [endZ, setEndZ] = useState(formatHHMM(dutyEndZulu))
+  const [startZ, setStartZ] = useState(effectiveStart)
+  const [endZ, setEndZ] = useState(effectiveEnd)
   const [saving, setSaving] = useState(false)
 
-  const hasValues = dutyStartZulu || dutyEndZulu
-  const displayStart = formatHHMM(dutyStartZulu)
-  const displayEnd = formatHHMM(dutyEndZulu)
+  const hasValues = effectiveStart !== '--:--' || effectiveEnd !== '--:--'
+
+  const handleEdit = () => {
+    // Pre-fill with effective values (saved or auto-computed)
+    setStartZ(effectiveStart)
+    setEndZ(effectiveEnd)
+    setEditing(true)
+  }
 
   const handleSave = async () => {
     if (saving) return
@@ -42,7 +65,7 @@ export function DutyZuluEditor({
   if (!editing) {
     return (
       <button
-        onClick={() => setEditing(true)}
+        onClick={handleEdit}
         className="flex items-center gap-1.5 text-[11px] group"
       >
         {/* Green pencil icon */}
@@ -51,9 +74,16 @@ export function DutyZuluEditor({
         </svg>
         {hasValues ? (
           <>
-            <span className="font-mono text-emerald-400">{displayStart}Z</span>
+            <span className={`font-mono ${isAuto ? 'text-emerald-400/50' : 'text-emerald-400'}`}>
+              {effectiveStart}Z
+            </span>
             <span className="text-gray-600">-</span>
-            <span className="font-mono text-emerald-400">{displayEnd}Z</span>
+            <span className={`font-mono ${isAuto ? 'text-emerald-400/50' : 'text-emerald-400'}`}>
+              {effectiveEnd}Z
+            </span>
+            {isAuto && (
+              <span className="text-gray-600 text-[9px] italic ml-0.5">auto</span>
+            )}
           </>
         ) : (
           <span className="text-gray-600 italic group-hover:text-emerald-500/70 transition-colors">
