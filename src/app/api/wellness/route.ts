@@ -74,16 +74,33 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(15)
 
-    const chatHistory = (history ?? []).map((m) => ({
+    const rawHistory = (history ?? []).map((m) => ({
       role: m.role as 'user' | 'model',
       parts: [{ text: m.content }],
     }))
     // Gemini uses 'model' for assistant role
-    chatHistory.forEach((m) => {
+    rawHistory.forEach((m) => {
       if (m.role === ('assistant' as string)) {
         m.role = 'model'
       }
     })
+
+    // Validate and fix chat history - Gemini requires alternating user/model roles
+    // and the first message must be from 'user'
+    const chatHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
+    for (const msg of rawHistory) {
+      if (chatHistory.length === 0 && msg.role === 'model') continue
+      if (chatHistory.length === 0) {
+        chatHistory.push(msg)
+      } else {
+        const lastRole = chatHistory[chatHistory.length - 1].role
+        if (msg.role === lastRole) {
+          chatHistory[chatHistory.length - 1].parts[0].text += '\n\n' + msg.parts[0].text
+        } else {
+          chatHistory.push(msg)
+        }
+      }
+    }
 
     // 8. Call Gemini with streaming
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
@@ -98,10 +115,35 @@ export async function POST(request: NextRequest) {
     })
 
     const chat = model.startChat({
-      history: chatHistory.slice(0, -1), // Exclude the last user message (we send it below)
+      history: chatHistory.slice(0, -1),
     })
 
-    const result = await chat.sendMessageStream(message)
+    // Call Gemini with specific error handling
+    let result
+    try {
+      result = await chat.sendMessageStream(message)
+    } catch (err: unknown) {
+      console.error('Gemini sendMessageStream error (wellness):', err)
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      const errorString = errorMessage.toLowerCase()
+
+      if (errorString.includes('rate limit') || errorString.includes('quota') || errorString.includes('429')) {
+        return Response.json(
+          { error: 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.' },
+          { status: 429 }
+        )
+      }
+      if (errorString.includes('safety') || errorString.includes('blocked')) {
+        return Response.json(
+          { error: 'No puedo procesar esa consulta. Intenta reformularla.' },
+          { status: 400 }
+        )
+      }
+      return Response.json(
+        { error: 'Error generando respuesta. Intenta de nuevo.' },
+        { status: 500 }
+      )
+    }
 
     // 9. Stream response via SSE
     const encoder = new TextEncoder()

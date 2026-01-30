@@ -1,6 +1,5 @@
 'use client'
 
-import { useCallback } from 'react'
 import { useStudyPlan } from '../hooks/useStudyPlan'
 import { PlanCreator } from './PlanCreator'
 import { PlanDashboard } from './PlanDashboard'
@@ -10,7 +9,7 @@ export function StudyRoom() {
     state,
     submitPlan,
     selectWeek,
-    markTopicProgress,
+    recordSession,
     handleCompletePlan,
     handleArchivePlan,
     handleDeletePlan,
@@ -18,16 +17,6 @@ export function StudyRoom() {
     startCreating,
     cancelCreating,
   } = useStudyPlan()
-
-  const markTopicComplete = useCallback(
-    (topicId: string) => markTopicProgress(topicId, 'completed', 100),
-    [markTopicProgress]
-  )
-
-  const startTopicProgress = useCallback(
-    (topicId: string) => markTopicProgress(topicId, 'in_progress', 0),
-    [markTopicProgress]
-  )
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -98,8 +87,7 @@ export function StudyRoom() {
           plan={state.plan}
           selectedWeek={state.selectedWeek}
           onSelectWeek={selectWeek}
-          onMarkComplete={markTopicComplete}
-          onStartProgress={startTopicProgress}
+          onRecordSession={recordSession}
           onCompletePlan={handleCompletePlan}
           onArchivePlan={handleArchivePlan}
           onDeletePlan={handleDeletePlan}

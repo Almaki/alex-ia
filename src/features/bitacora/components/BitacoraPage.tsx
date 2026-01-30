@@ -2,11 +2,31 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { useLogbook } from '../hooks/useLogbook'
+import { YearlyComparisonChart } from './YearlyComparisonChart'
+
+/** Strip seconds from time strings: "HH:MM:SS" -> "HH:MM", "HH:MM" -> "HH:MM" */
+function formatHHMM(time: string | null): string {
+  if (!time) return '--:--'
+  const parts = time.split(':')
+  if (parts.length < 2) return time
+  const h = parts[0].padStart(2, '0')
+  const m = String(Math.min(59, parseInt(parts[1], 10) || 0)).padStart(2, '0')
+  return `${h}:${m}`
+}
+
+function formatDecimalHours(hours: number): string {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  return `${h}:${String(Math.min(59, m)).padStart(2, '0')}`
+}
 
 export function BitacoraPage() {
-  const { entries, uploads, loading, uploading, error, month, year, setMonth, setYear, uploadRoster, refresh } = useLogbook()
+  const { entries, uploads, stats, loading, uploading, error, month, year, setMonth, setYear, uploadRoster, saveFlight, yearlyCurrentData, yearlyPreviousData, yearlyLoading } = useLogbook()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [editingFlight, setEditingFlight] = useState<string | null>(null)
+  const [editValues, setEditValues] = useState<{ block_hours: string; flight_hours: string }>({ block_hours: '', flight_hours: '' })
+  const [saving, setSaving] = useState(false)
 
   const handleFile = useCallback(async (file: File) => {
     await uploadRoster(file)
@@ -22,7 +42,6 @@ export function BitacoraPage() {
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) handleFile(file)
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = ''
   }, [handleFile])
 
@@ -36,7 +55,32 @@ export function BitacoraPage() {
     else setMonth(month + 1)
   }
 
+  const startEditFlight = (flightId: string, blockHours: number | null, flightHours: number | null) => {
+    setEditingFlight(flightId)
+    setEditValues({
+      block_hours: blockHours?.toString() || '',
+      flight_hours: flightHours?.toString() || '',
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingFlight(null)
+    setEditValues({ block_hours: '', flight_hours: '' })
+  }
+
+  const handleSaveFlight = async () => {
+    if (!editingFlight) return
+    setSaving(true)
+    const updates: { block_hours?: number; flight_hours?: number } = {}
+    if (editValues.block_hours) updates.block_hours = parseFloat(editValues.block_hours)
+    if (editValues.flight_hours) updates.flight_hours = parseFloat(editValues.flight_hours)
+    await saveFlight(editingFlight, updates)
+    setSaving(false)
+    setEditingFlight(null)
+  }
+
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+  const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado']
 
   const activityColors: Record<string, string> = {
     flight: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -55,6 +99,12 @@ export function BitacoraPage() {
     off: 'Libre', vacation: 'Vacaciones', training: 'Entrenamiento',
     medical: 'Medico', other: 'Otro',
   }
+
+  // Find today's entry
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const todayEntry = entries.find((e) => e.entry_date === todayStr)
+  const isCurrentMonth = month === today.getMonth() + 1 && year === today.getFullYear()
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-8">
@@ -75,7 +125,7 @@ export function BitacoraPage() {
         onDragLeave={() => setDragActive(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-2xl p-8 md:p-12 text-center cursor-pointer transition-all ${
+        className={`border-2 border-dashed rounded-2xl p-6 md:p-10 text-center cursor-pointer transition-all ${
           dragActive
             ? 'border-amber-500 bg-amber-500/10'
             : uploading
@@ -97,16 +147,14 @@ export function BitacoraPage() {
             <p className="text-xs text-gray-500">Esto puede tardar unos segundos</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <div className="space-y-2">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <svg className="w-7 h-7 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
             </div>
             <p className="text-white font-medium">Sube tu roster</p>
-            <p className="text-sm text-gray-400">
-              Arrastra una foto o PDF, o haz clic para seleccionar
-            </p>
+            <p className="text-sm text-gray-400">Arrastra una foto o PDF, o haz clic para seleccionar</p>
             <p className="text-xs text-gray-600">JPG, PNG, WebP o PDF</p>
           </div>
         )}
@@ -116,6 +164,87 @@ export function BitacoraPage() {
       {error && (
         <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3">
           <p className="text-sm text-red-400">{error}</p>
+        </div>
+      )}
+
+      {/* TODAY'S CARD - Highlighted */}
+      {isCurrentMonth && todayEntry && (
+        <div className="bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border-2 border-amber-500/40 rounded-2xl p-4 shadow-lg shadow-amber-500/5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <span className="text-sm font-bold text-amber-400">{today.getDate()}</span>
+            </div>
+            <div>
+              <span className="text-sm font-bold text-amber-300">Hoy - {dayNames[today.getDay()]}</span>
+              <span className={`ml-2 px-2 py-0.5 rounded-lg text-xs font-medium border ${activityColors[todayEntry.activity_type] || activityColors.other}`}>
+                {activityLabels[todayEntry.activity_type] || todayEntry.activity_type}
+              </span>
+            </div>
+          </div>
+
+          {/* C/I and C/O */}
+          <div className="flex items-center gap-4 mb-3 text-xs">
+            {todayEntry.check_in && (
+              <span className="text-gray-300">
+                <span className="text-gray-500">C/I</span> {formatHHMM(todayEntry.check_in)}
+              </span>
+            )}
+            {todayEntry.check_out ? (
+              <span className="text-gray-300">
+                <span className="text-gray-500">C/O</span> {formatHHMM(todayEntry.check_out)}
+              </span>
+            ) : todayEntry.check_in ? (
+              <span className="text-amber-400/70 italic">
+                <span className="text-gray-500">C/O</span> pendiente
+              </span>
+            ) : null}
+          </div>
+
+          {/* Today's flights */}
+          {todayEntry.flights && todayEntry.flights.length > 0 && (
+            <div className="space-y-2">
+              {todayEntry.flights.map((flight) => (
+                <div key={flight.id} className="flex items-center gap-3 bg-black/20 rounded-lg p-3">
+                  <div className="text-xs font-mono font-bold text-amber-400 w-16 shrink-0">
+                    {flight.flight_number || '-'}
+                  </div>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-sm font-bold text-white">{flight.origin}</span>
+                    <svg className="w-4 h-4 text-amber-500/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                    <span className="text-sm font-bold text-white">{flight.destination}</span>
+                  </div>
+                  <div className="text-xs text-gray-400 shrink-0">
+                    {formatHHMM(flight.std)}{flight.std && flight.sta && ' - '}{formatHHMM(flight.sta)}
+                  </div>
+                  {flight.block_hours != null && (
+                    <span className="text-xs font-medium text-purple-400 shrink-0">
+                      {formatDecimalHours(flight.block_hours)}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Crew */}
+          {(todayEntry.crew_captain || todayEntry.crew_first_officer) && (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-400">
+              {todayEntry.crew_captain && <span>CP: {todayEntry.crew_captain}</span>}
+              {todayEntry.crew_first_officer && <span>FO: {todayEntry.crew_first_officer}</span>}
+              {todayEntry.crew_purser && <span>PU: {todayEntry.crew_purser}</span>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Today card when no entry */}
+      {isCurrentMonth && !todayEntry && !loading && (
+        <div className="bg-gray-900/30 border border-white/5 rounded-xl p-4 text-center">
+          <p className="text-sm text-gray-500">
+            Hoy {dayNames[today.getDay()]} {today.getDate()} - Sin actividad registrada
+          </p>
         </div>
       )}
 
@@ -154,71 +283,208 @@ export function BitacoraPage() {
 
       {!loading && entries.length > 0 && (
         <div className="space-y-3">
-          {entries.map((entry) => (
-            <div key={entry.id} className="bg-gray-900/50 border border-white/10 rounded-xl p-4 hover:border-amber-500/20 transition-all">
-              {/* Entry Header */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-white">
-                    {new Date(entry.entry_date + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric' })}
-                  </span>
-                  <span className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${activityColors[entry.activity_type] || activityColors.other}`}>
-                    {activityLabels[entry.activity_type] || entry.activity_type}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  {entry.check_in && <span>C/I: {entry.check_in}</span>}
-                  {entry.check_out && <span>C/O: {entry.check_out}</span>}
-                </div>
-              </div>
+          {entries.map((entry) => {
+            const isToday = entry.entry_date === todayStr
+            const entryDate = new Date(entry.entry_date + 'T12:00:00')
 
-              {/* Flights */}
-              {entry.flights && entry.flights.length > 0 && (
-                <div className="space-y-2">
-                  {entry.flights.map((flight, idx) => (
-                    <div key={idx} className="flex items-center gap-3 bg-white/5 rounded-lg p-3">
-                      <div className="text-xs font-mono font-bold text-amber-400 w-16 shrink-0">
-                        {flight.flight_number || '-'}
-                      </div>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-sm font-bold text-white">{flight.origin}</span>
-                        <svg className="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                        <span className="text-sm font-bold text-white">{flight.destination}</span>
-                      </div>
-                      <div className="text-xs text-gray-500 shrink-0 hidden sm:block">
-                        {flight.std && <span>{flight.std}</span>}
-                        {flight.std && flight.sta && <span> - </span>}
-                        {flight.sta && <span>{flight.sta}</span>}
-                      </div>
-                      {flight.block_hours && (
-                        <span className="text-xs font-medium text-purple-400 shrink-0">
-                          {flight.block_hours}h
-                        </span>
-                      )}
+            return (
+              <div
+                key={entry.id}
+                className={`bg-gray-900/50 border rounded-xl p-4 transition-all ${
+                  isToday
+                    ? 'border-amber-500/30 bg-amber-500/5'
+                    : 'border-white/10 hover:border-amber-500/20'
+                }`}
+              >
+                {/* Entry Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-center w-10">
+                      <span className="text-lg font-bold text-white leading-none">{entryDate.getDate()}</span>
+                      <span className="text-[10px] text-gray-500 uppercase">{entryDate.toLocaleDateString('es-MX', { weekday: 'short' })}</span>
                     </div>
-                  ))}
+                    <span className={`px-2 py-0.5 rounded-lg text-xs font-medium border ${activityColors[entry.activity_type] || activityColors.other}`}>
+                      {activityLabels[entry.activity_type] || entry.activity_type}
+                    </span>
+                    {isToday && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">
+                        HOY
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-500">
+                    {entry.check_in && (
+                      <span>C/I {formatHHMM(entry.check_in)}</span>
+                    )}
+                    {entry.check_out ? (
+                      <span>C/O {formatHHMM(entry.check_out)}</span>
+                    ) : entry.check_in ? (
+                      <span className="text-amber-400/50 italic">C/O --:--</span>
+                    ) : null}
+                  </div>
                 </div>
-              )}
 
-              {/* Crew */}
-              {(entry.crew_captain || entry.crew_first_officer || entry.crew_purser) && (
-                <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
-                  {entry.crew_captain && <span>CP: {entry.crew_captain}</span>}
-                  {entry.crew_first_officer && <span>FO: {entry.crew_first_officer}</span>}
-                  {entry.crew_purser && <span>PU: {entry.crew_purser}</span>}
-                </div>
-              )}
+                {/* Flights */}
+                {entry.flights && entry.flights.length > 0 && (
+                  <div className="space-y-2">
+                    {entry.flights.map((flight) => {
+                      const isEditing = editingFlight === flight.id
 
-              {/* Notes */}
-              {entry.notes && (
-                <p className="mt-2 text-xs text-gray-500 italic">{entry.notes}</p>
-              )}
-            </div>
-          ))}
+                      return (
+                        <div key={flight.id} className="bg-white/5 rounded-lg p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="text-xs font-mono font-bold text-amber-400 w-14 shrink-0">
+                              {flight.flight_number || '-'}
+                            </div>
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="text-sm font-bold text-white">{flight.origin}</span>
+                              <svg className="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                              </svg>
+                              <span className="text-sm font-bold text-white">{flight.destination}</span>
+                            </div>
+                            {flight.aircraft_registration && (
+                              <span className="text-[10px] text-gray-500 font-mono shrink-0 hidden sm:block">
+                                {flight.aircraft_registration}
+                              </span>
+                            )}
+                            <div className="text-xs text-gray-500 shrink-0 hidden sm:block">
+                              {flight.std && formatHHMM(flight.std) !== '--:--' && <span>{formatHHMM(flight.std)}</span>}
+                              {flight.std && flight.sta && ' - '}
+                              {flight.sta && formatHHMM(flight.sta) !== '--:--' && <span>{formatHHMM(flight.sta)}</span>}
+                            </div>
+
+                            {/* Hours display / Edit trigger */}
+                            {!isEditing ? (
+                              <button
+                                onClick={() => startEditFlight(flight.id, flight.block_hours, flight.flight_hours)}
+                                className="text-xs font-medium text-purple-400 shrink-0 hover:text-purple-300 transition-colors px-2 py-1 rounded hover:bg-purple-500/10"
+                                title="Editar horas"
+                              >
+                                {flight.block_hours != null ? formatDecimalHours(flight.block_hours) : '--:--'}
+                              </button>
+                            ) : (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-[9px] text-gray-500">BLK</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={editValues.block_hours}
+                                    onChange={(e) => setEditValues((v) => ({ ...v, block_hours: e.target.value }))}
+                                    className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <label className="text-[9px] text-gray-500">FLT</label>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={editValues.flight_hours}
+                                    onChange={(e) => setEditValues((v) => ({ ...v, flight_hours: e.target.value }))}
+                                    className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
+                                    placeholder="0.00"
+                                  />
+                                </div>
+                                <div className="flex flex-col gap-1 ml-1">
+                                  <button
+                                    onClick={handleSaveFlight}
+                                    disabled={saving}
+                                    className="px-2 py-1 text-[10px] font-medium bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                                  >
+                                    {saving ? '...' : 'OK'}
+                                  </button>
+                                  <button
+                                    onClick={cancelEdit}
+                                    className="px-2 py-1 text-[10px] font-medium text-gray-400 rounded hover:bg-white/10 transition-colors"
+                                  >
+                                    X
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Hotel */}
+                {entry.hotel && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    <span className="text-gray-600">HTL:</span> {entry.hotel}
+                  </div>
+                )}
+
+                {/* Crew */}
+                {(entry.crew_captain || entry.crew_first_officer || entry.crew_purser) && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
+                    {entry.crew_captain && <span>CP: {entry.crew_captain}</span>}
+                    {entry.crew_first_officer && <span>FO: {entry.crew_first_officer}</span>}
+                    {entry.crew_purser && <span>PU: {entry.crew_purser}</span>}
+                  </div>
+                )}
+
+                {/* Notes */}
+                {entry.notes && (
+                  <p className="mt-2 text-xs text-gray-500 italic">{entry.notes}</p>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
+
+      {/* MONTHLY SUMMARY CARD */}
+      {stats && !loading && (
+        <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-4 md:p-6">
+          <h3 className="text-sm font-semibold text-white mb-4">
+            Resumen {monthNames[month - 1]} {year}
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-blue-400">{stats.totalFlights}</p>
+              <p className="text-xs text-gray-400 mt-1">Vuelos</p>
+            </div>
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-purple-400">
+                {formatDecimalHours(stats.totalBlockHours)}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Horas Block</p>
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-amber-400">
+                {formatDecimalHours(stats.totalFlightHours)}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Horas Vuelo</p>
+            </div>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-400">
+                {formatDecimalHours(stats.totalDutyHours)}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Horas Jornada</p>
+            </div>
+            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-indigo-400">{stats.nightFlights}</p>
+              <p className="text-xs text-gray-400 mt-1">Nocturnos</p>
+            </div>
+            <div className="bg-pink-500/10 border border-pink-500/20 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-pink-400">{stats.pfFlights}</p>
+              <p className="text-xs text-gray-400 mt-1">PF (Pilot Flying)</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Yearly Comparison Chart */}
+      <YearlyComparisonChart
+        currentYearData={yearlyCurrentData}
+        previousYearData={yearlyPreviousData}
+        currentYear={year}
+        loading={yearlyLoading}
+      />
 
       {/* Recent Uploads */}
       {uploads.length > 0 && (

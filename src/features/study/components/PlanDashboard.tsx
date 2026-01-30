@@ -10,8 +10,7 @@ interface PlanDashboardProps {
   plan: StudyPlanWithTopics
   selectedWeek: number | null
   onSelectWeek: (week: number | null) => void
-  onMarkComplete: (topicId: string) => void
-  onStartProgress: (topicId: string) => void
+  onRecordSession: (topicId: string, activityType: string) => void
   onCompletePlan: () => void
   onArchivePlan: () => void
   onDeletePlan: () => void
@@ -22,8 +21,7 @@ export function PlanDashboard({
   plan,
   selectedWeek,
   onSelectWeek,
-  onMarkComplete,
-  onStartProgress,
+  onRecordSession,
   onCompletePlan,
   onArchivePlan,
   onDeletePlan,
@@ -42,10 +40,11 @@ export function PlanDashboard({
   // Calculate total weeks needed
   const totalWeeks = Math.max(...plan.topics.map((topic) => topic.week_number))
 
-  // Calculate overall progress
+  // Calculate overall progress (average of all topic progress values)
   const totalTopics = plan.topics.length
-  const completedTopics = plan.topics.filter((topic) => topic.status === 'completed').length
-  const overallProgress = totalTopics > 0 ? Math.round((completedTopics / totalTopics) * 100) : 0
+  const overallProgress = totalTopics > 0
+    ? Math.round(plan.topics.reduce((sum, t) => sum + t.progress, 0) / totalTopics)
+    : 0
 
   // Filter topics by selected week
   const filteredTopics = selectedWeek !== null
@@ -118,6 +117,18 @@ export function PlanDashboard({
         onSelectWeek={onSelectWeek}
       />
 
+      {/* Onboarding Hint */}
+      {plan.topics.every((t) => t.sessions.length === 0) && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 md:p-4 flex items-start gap-3">
+          <svg className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-amber-300">
+            Selecciona un tema y practica con <strong>Quiz</strong> o <strong>Chat</strong> para registrar tu progreso. Cada sesion de estudio aumenta tu avance automaticamente.
+          </p>
+        </div>
+      )}
+
       {/* Topics Grid */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -135,8 +146,7 @@ export function PlanDashboard({
               <TopicCard
                 key={topic.id}
                 topic={topic}
-                onMarkComplete={onMarkComplete}
-                onStartProgress={onStartProgress}
+                onRecordSession={onRecordSession}
               />
             ))}
           </div>

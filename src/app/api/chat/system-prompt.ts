@@ -307,6 +307,14 @@ REGLAS DE ESTRUCTURA:
 - NO cites numeros de seccion, pagina, o capitulo de ningun documento
 - Presenta la informacion como conocimiento tecnico general, no como cita de un documento`}
 
+## Manejo de multiples preguntas
+Si el usuario hace varias preguntas en un solo mensaje:
+- Si son del MISMO TEMA o estan relacionadas: combina las respuestas en una sola respuesta coherente y fluida, integrando la informacion de forma natural como una sola explicacion
+- Si son de TEMAS DIFERENTES: responde cada una por separado, numerandolas o separandolas claramente con subtitulos
+- Prioriza claridad: el usuario debe sentir que TODAS sus preguntas fueron respondidas
+- Mantén la estructura concisa/detallada para cada pregunta individual si son temas diferentes
+- Si son temas relacionados, integra la informacion de forma natural como una sola explicacion completa
+
 ## Disclaimer
 Al final de TODAS las respuestas sobre procedimientos o datos tecnicos, agrega:
 "Informacion con fines de entretenimiento y referencia educativa. Cualquier parecido con datos operacionales reales es coincidencia. Consulta siempre la documentacion oficial de tu operador."

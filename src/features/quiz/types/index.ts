@@ -84,3 +84,87 @@ export const ELO_RANKS = [
   { min: 1800, label: 'Instructor',     color: 'text-red-400' },
   { min: 2000, label: 'Comandante',     color: 'text-yellow-300' },
 ] as const
+
+// ========== Challenge Types ==========
+
+export type ChallengeStatus =
+  | 'pending' | 'accepted' | 'playing'
+  | 'completed' | 'declined' | 'expired' | 'cancelled'
+
+export interface QuizChallenge {
+  id: string
+  challenger_id: string
+  opponent_id: string
+  status: ChallengeStatus
+  difficulty: 1 | 2 | 3
+  category: string | null
+  question_ids: string[]
+  challenger_correct: number
+  challenger_total_time: number
+  opponent_correct: number
+  opponent_total_time: number
+  winner_id: string | null
+  challenger_elo_change: number
+  opponent_elo_change: number
+  expires_at: string
+  started_at: string | null
+  finished_at: string | null
+  created_at: string
+}
+
+export interface OnlinePilot {
+  id: string
+  full_name: string | null
+  elo_rating: number
+  fleet: string | null
+  position: string | null
+}
+
+export type ChallengePhase =
+  | 'idle'
+  | 'selecting'
+  | 'waiting'
+  | 'countdown'
+  | 'playing'
+  | 'waiting_opponent'
+  | 'results'
+
+export interface ChallengeState {
+  phase: ChallengePhase
+  challenge: QuizChallenge | null
+  questions: QuizQuestion[]
+  currentIndex: number
+  selectedIndex: number | null
+  timeRemaining: number
+  myCorrect: number
+  opponentProgress: number
+  opponentCorrect: number
+  onlinePilots: OnlinePilot[]
+  incomingChallenge: (QuizChallenge & { challenger_name?: string; challenger_elo?: number }) | null
+  opponentName: string | null
+  countdown: number
+  error: string | null
+}
+
+export type ChallengeAction =
+  | { type: 'SET_ONLINE_PILOTS'; pilots: OnlinePilot[] }
+  | { type: 'INCOMING_CHALLENGE'; challenge: QuizChallenge & { challenger_name?: string; challenger_elo?: number } }
+  | { type: 'DISMISS_CHALLENGE' }
+  | { type: 'START_SELECTING' }
+  | { type: 'CHALLENGE_SENT'; challenge: QuizChallenge; opponentName: string }
+  | { type: 'CHALLENGE_ACCEPTED'; challenge: QuizChallenge; questions: QuizQuestion[] }
+  | { type: 'OPPONENT_ACCEPTED'; challenge: QuizChallenge; questions: QuizQuestion[] }
+  | { type: 'CHALLENGE_DECLINED' }
+  | { type: 'CHALLENGE_EXPIRED' }
+  | { type: 'START_PLAYING' }
+  | { type: 'TICK_COUNTDOWN' }
+  | { type: 'SELECT_ANSWER'; index: number }
+  | { type: 'SHOW_FEEDBACK'; isCorrect: boolean }
+  | { type: 'NEXT_QUESTION' }
+  | { type: 'OPPONENT_PROGRESS'; questionsAnswered: number; correct: number }
+  | { type: 'FINISH_MY_PART' }
+  | { type: 'SHOW_RESULTS'; challenge: QuizChallenge }
+  | { type: 'TICK_TIMER' }
+  | { type: 'TIME_UP' }
+  | { type: 'SET_ERROR'; error: string }
+  | { type: 'RESET' }

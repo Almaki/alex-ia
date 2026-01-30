@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
       })
       ragContext = ragResult.formattedContext
       ragSources = ragResult.sources
-    } catch {
+    } catch (err) {
       // RAG failure is non-fatal — continue without context
-      console.warn('RAG pipeline failed, continuing without context')
+      console.warn('RAG pipeline failed, continuing without context', err)
     }
 
     // 6. Get or create conversation
@@ -88,16 +88,36 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
       .limit(20)
 
-    const chatHistory = (history ?? []).map((m) => ({
+    const rawHistory = (history ?? []).map((m) => ({
       role: m.role as 'user' | 'model',
       parts: [{ text: m.content }],
     }))
     // Gemini uses 'model' for assistant role
-    chatHistory.forEach((m) => {
+    rawHistory.forEach((m) => {
       if (m.role === ('assistant' as string)) {
         m.role = 'model'
       }
     })
+
+    // Validate and fix chat history - Gemini requires alternating user/model roles
+    // and the first message must be from 'user'
+    const chatHistory: { role: 'user' | 'model'; parts: { text: string }[] }[] = []
+    for (const msg of rawHistory) {
+      // Skip model messages at the start (Gemini requires first message to be user)
+      if (chatHistory.length === 0 && msg.role === 'model') continue
+
+      if (chatHistory.length === 0) {
+        chatHistory.push(msg)
+      } else {
+        const lastRole = chatHistory[chatHistory.length - 1].role
+        if (msg.role === lastRole) {
+          // Consecutive same-role messages - merge into the last one
+          chatHistory[chatHistory.length - 1].parts[0].text += '\n\n' + msg.parts[0].text
+        } else {
+          chatHistory.push(msg)
+        }
+      }
+    }
 
     // 9. Call Gemini with streaming
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
@@ -115,7 +135,44 @@ export async function POST(request: NextRequest) {
       history: chatHistory.slice(0, -1), // Exclude the last user message (we send it below)
     })
 
-    const result = await chat.sendMessageStream(message)
+    // Call Gemini with specific error handling
+    let result
+    try {
+      result = await chat.sendMessageStream(message)
+    } catch (err: unknown) {
+      console.error('Gemini sendMessageStream error:', err)
+
+      // Parse Gemini-specific errors
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      const errorString = errorMessage.toLowerCase()
+
+      if (errorString.includes('rate limit') || errorString.includes('quota') || errorString.includes('429')) {
+        return Response.json(
+          { error: 'Demasiadas solicitudes. Espera un momento e intenta de nuevo.' },
+          { status: 429 }
+        )
+      }
+
+      if (errorString.includes('safety') || errorString.includes('blocked') || errorString.includes('harmful')) {
+        return Response.json(
+          { error: 'No puedo procesar esa consulta. Intenta reformularla.' },
+          { status: 400 }
+        )
+      }
+
+      if (errorString.includes('invalid') || errorString.includes('malformed')) {
+        return Response.json(
+          { error: 'Formato de mensaje invalido. Intenta de nuevo.' },
+          { status: 400 }
+        )
+      }
+
+      // Generic Gemini error
+      return Response.json(
+        { error: 'Error generando respuesta. Intenta de nuevo.' },
+        { status: 500 }
+      )
+    }
 
     // 10. Stream response via SSE
     const encoder = new TextEncoder()
@@ -162,7 +219,7 @@ export async function POST(request: NextRequest) {
         } catch (err) {
           console.error('Streaming error:', err)
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'Error generando respuesta' })}\n\n`)
+            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'Error en el streaming. Intenta de nuevo.' })}\n\n`)
           )
           controller.close()
         }

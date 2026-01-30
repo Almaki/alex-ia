@@ -250,6 +250,83 @@ export async function getLogbookStats(userId?: string): Promise<{
   return { data: stats, error: null }
 }
 
+export async function getMonthlyStats(
+  month: number,
+  year: number
+): Promise<{
+  data: {
+    totalFlights: number
+    totalBlockHours: number
+    totalFlightHours: number
+    totalDutyHours: number
+    nightFlights: number
+    pfFlights: number
+  } | null
+  error: string | null
+}> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { data: null, error: 'No autenticado' }
+
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
+  const endDate = month === 12
+    ? `${year + 1}-01-01`
+    : `${year}-${String(month + 1).padStart(2, '0')}-01`
+
+  const { data: entries } = await supabase
+    .from('logbook_entries')
+    .select('id, check_in, check_out')
+    .eq('user_id', user.id)
+    .gte('entry_date', startDate)
+    .lt('entry_date', endDate)
+
+  if (!entries || entries.length === 0) {
+    return {
+      data: { totalFlights: 0, totalBlockHours: 0, totalFlightHours: 0, totalDutyHours: 0, nightFlights: 0, pfFlights: 0 },
+      error: null,
+    }
+  }
+
+  // Calculate duty hours from check_in/check_out
+  let totalDutyMinutes = 0
+  for (const entry of entries) {
+    if (entry.check_in && entry.check_out) {
+      const [ciH, ciM] = entry.check_in.split(':').map(Number)
+      const [coH, coM] = entry.check_out.split(':').map(Number)
+      let dutyMin = (coH * 60 + coM) - (ciH * 60 + ciM)
+      if (dutyMin < 0) dutyMin += 24 * 60 // overnight
+      totalDutyMinutes += dutyMin
+    }
+  }
+
+  const entryIds = entries.map((e) => e.id)
+
+  const { data: flights } = await supabase
+    .from('logbook_flights')
+    .select('block_hours, flight_hours, is_night, is_pf')
+    .in('entry_id', entryIds)
+
+  const flightStats = (flights || []).reduce(
+    (acc, f) => ({
+      totalFlights: acc.totalFlights + 1,
+      totalBlockHours: acc.totalBlockHours + (f.block_hours || 0),
+      totalFlightHours: acc.totalFlightHours + (f.flight_hours || 0),
+      nightFlights: acc.nightFlights + (f.is_night ? 1 : 0),
+      pfFlights: acc.pfFlights + (f.is_pf ? 1 : 0),
+    }),
+    { totalFlights: 0, totalBlockHours: 0, totalFlightHours: 0, nightFlights: 0, pfFlights: 0 }
+  )
+
+  return {
+    data: {
+      ...flightStats,
+      totalDutyHours: Math.round((totalDutyMinutes / 60) * 100) / 100,
+    },
+    error: null,
+  }
+}
+
 export async function createManualLogbookEntry(data: {
   entry_date: string
   activity_type: 'flight' | 'sim' | 'ground' | 'standby' | 'off' | 'vacation' | 'training' | 'medical' | 'other'
@@ -340,4 +417,98 @@ export async function createManualLogbookEntry(data: {
 
   revalidatePath('/bitacora')
   return { data: { id: entry.id }, error: null }
+}
+
+export interface YearlyMonthStats {
+  month: number
+  flightCount: number
+  blockHours: number
+  flightHours: number
+  dutyHours: number
+  nightFlights: number
+  pfFlights: number
+}
+
+export async function getYearlyStats(year: number): Promise<{
+  data: YearlyMonthStats[] | null
+  error: string | null
+}> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { data: null, error: 'No autenticado' }
+
+  const startDate = `${year}-01-01`
+  const endDate = `${year + 1}-01-01`
+
+  const { data: entries } = await supabase
+    .from('logbook_entries')
+    .select('id, entry_date, check_in, check_out')
+    .eq('user_id', user.id)
+    .gte('entry_date', startDate)
+    .lt('entry_date', endDate)
+
+  if (!entries || entries.length === 0) {
+    return { data: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, flightCount: 0, blockHours: 0, flightHours: 0, dutyHours: 0, nightFlights: 0, pfFlights: 0 })), error: null }
+  }
+
+  // Group entries by month
+  const entryIdsByMonth = new Map<number, string[]>()
+  const dutyMinutesByMonth = new Map<number, number>()
+
+  for (const entry of entries) {
+    const m = parseInt(entry.entry_date.split('-')[1], 10)
+    if (!entryIdsByMonth.has(m)) entryIdsByMonth.set(m, [])
+    entryIdsByMonth.get(m)!.push(entry.id)
+
+    if (entry.check_in && entry.check_out) {
+      const [ciH, ciM] = entry.check_in.split(':').map(Number)
+      const [coH, coM] = entry.check_out.split(':').map(Number)
+      let dutyMin = (coH * 60 + coM) - (ciH * 60 + ciM)
+      if (dutyMin < 0) dutyMin += 24 * 60
+      dutyMinutesByMonth.set(m, (dutyMinutesByMonth.get(m) || 0) + dutyMin)
+    }
+  }
+
+  const allEntryIds = entries.map((e) => e.id)
+  const { data: flights } = await supabase
+    .from('logbook_flights')
+    .select('entry_id, block_hours, flight_hours, is_night, is_pf')
+    .in('entry_id', allEntryIds)
+
+  // Map flights to months via entry_id
+  const entryToMonth = new Map<string, number>()
+  for (const entry of entries) {
+    entryToMonth.set(entry.id, parseInt(entry.entry_date.split('-')[1], 10))
+  }
+
+  const monthStats = new Map<number, { flightCount: number; blockHours: number; flightHours: number; nightFlights: number; pfFlights: number }>()
+
+  for (const f of flights || []) {
+    const m = entryToMonth.get(f.entry_id)
+    if (!m) continue
+    const s = monthStats.get(m) || { flightCount: 0, blockHours: 0, flightHours: 0, nightFlights: 0, pfFlights: 0 }
+    s.flightCount += 1
+    s.blockHours += f.block_hours || 0
+    s.flightHours += f.flight_hours || 0
+    s.nightFlights += f.is_night ? 1 : 0
+    s.pfFlights += f.is_pf ? 1 : 0
+    monthStats.set(m, s)
+  }
+
+  const result: YearlyMonthStats[] = Array.from({ length: 12 }, (_, i) => {
+    const m = i + 1
+    const s = monthStats.get(m)
+    return {
+      month: m,
+      flightCount: s?.flightCount ?? 0,
+      blockHours: Math.round((s?.blockHours ?? 0) * 100) / 100,
+      flightHours: Math.round((s?.flightHours ?? 0) * 100) / 100,
+      dutyHours: Math.round(((dutyMinutesByMonth.get(m) || 0) / 60) * 100) / 100,
+      nightFlights: s?.nightFlights ?? 0,
+      pfFlights: s?.pfFlights ?? 0,
+    }
+  })
+
+  return { data: result, error: null }
 }

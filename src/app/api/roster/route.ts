@@ -96,17 +96,45 @@ export async function POST(request: NextRequest) {
     }
 
     // 7. Save parsed data to logbook tables
+    // Re-upload logic: preserve historical data (user-edited hours, registration, duty)
+    // for dates BEFORE today. Only update/overwrite entries from today forward.
     const entries = parsedData.entries || []
     const savedEntries = []
+    const skippedEntries = []
+    const todayStr = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+
+    // Pre-fetch existing entries for this user in the roster's date range
+    const entryDates = entries.map((e: Record<string, string>) => e.date).filter(Boolean)
+    const { data: existingEntries } = entryDates.length > 0
+      ? await supabase
+          .from('logbook_entries')
+          .select('id, entry_date')
+          .eq('user_id', user.id)
+          .in('entry_date', entryDates)
+      : { data: [] }
+
+    const existingByDate = new Map(
+      (existingEntries || []).map((e) => [e.entry_date, e.id])
+    )
 
     for (const entry of entries) {
-      // Insert logbook entry
+      const entryDate = entry.date as string
+      const isPastDate = entryDate < todayStr
+      const existingId = existingByDate.get(entryDate)
+
+      // Past dates with existing data: preserve user edits, skip overwrite
+      if (isPastDate && existingId) {
+        skippedEntries.push({ date: entryDate, reason: 'preserved_history' })
+        continue
+      }
+
+      // Past dates without existing data OR today/future dates: upsert normally
       const { data: logbookEntry, error: entryError } = await supabase
         .from('logbook_entries')
         .upsert({
           user_id: user.id,
           roster_upload_id: upload.id,
-          entry_date: entry.date,
+          entry_date: entryDate,
           activity_type: entry.activity_type || 'other',
           check_in: entry.check_in || null,
           check_out: entry.check_out || null,
@@ -164,6 +192,7 @@ export async function POST(request: NextRequest) {
       success: true,
       uploadId: upload.id,
       entriesCount: savedEntries.length,
+      preservedCount: skippedEntries.length,
       data: parsedData,
     })
 

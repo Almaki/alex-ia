@@ -46,11 +46,11 @@ export function ChatInterface() {
           </div>
 
           {/* Response Mode Toggle */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-1.5 ml-auto">
             <button
               type="button"
               onClick={() => setResponseMode(responseMode === 'concise' ? 'detailed' : 'concise')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
                 responseMode === 'detailed' ? 'bg-purple-600' : 'bg-gray-600'
               }`}
               aria-label="Toggle response mode"
@@ -59,7 +59,7 @@ export function ChatInterface() {
                 responseMode === 'detailed' ? 'translate-x-6' : 'translate-x-1'
               }`} />
             </button>
-            <span className="text-xs text-gray-400 hidden sm:inline">
+            <span className="text-xs text-gray-400 whitespace-nowrap">
               {responseMode === 'concise' ? 'Directa' : 'Detallada'}
             </span>
           </div>

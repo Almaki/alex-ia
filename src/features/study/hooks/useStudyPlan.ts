@@ -207,7 +207,11 @@ export function useStudyPlan() {
 
     const sessionsCount = topic.sessions.length + 1
     const newProgress = Math.min(100, sessionsCount * 25)
-    const newStatus = topic.status === 'pending' ? 'in_progress' : topic.status
+    const newStatus = newProgress >= 100
+      ? 'completed'
+      : topic.status === 'pending'
+        ? 'in_progress'
+        : topic.status
 
     dispatch({
       type: 'UPDATE_TOPIC',
