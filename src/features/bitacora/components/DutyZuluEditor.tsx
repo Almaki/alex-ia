@@ -43,23 +43,23 @@ export function DutyZuluEditor({
     return (
       <button
         onClick={() => setEditing(true)}
-        className="flex items-center gap-2 text-[11px] group"
+        className="flex items-center gap-1.5 text-[11px] group"
       >
+        {/* Green pencil icon */}
+        <svg className="w-3 h-3 text-emerald-500 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
         {hasValues ? (
           <>
-            <span className="text-emerald-500 font-sans">Z</span>
             <span className="font-mono text-emerald-400">{displayStart}Z</span>
             <span className="text-gray-600">-</span>
             <span className="font-mono text-emerald-400">{displayEnd}Z</span>
           </>
         ) : (
           <span className="text-gray-600 italic group-hover:text-emerald-500/70 transition-colors">
-            + Zulu
+            Zulu
           </span>
         )}
-        <svg className="w-3 h-3 text-gray-600 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-        </svg>
       </button>
     )
   }

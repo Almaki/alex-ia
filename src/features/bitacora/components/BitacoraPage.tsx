@@ -5,7 +5,7 @@ import { useLogbook } from '../hooks/useLogbook'
 import { YearlyComparisonChart } from './YearlyComparisonChart'
 import { FlightDetailEditor } from './FlightDetailEditor'
 import { DutyZuluEditor } from './DutyZuluEditor'
-import { formatDecimalHours, formatHHMM, formatZulu, isOvernightDuty } from '../utils/date-helpers'
+import { calculateDuration, formatDecimalHours, formatHHMM, formatZulu, isOvernightDuty } from '../utils/date-helpers'
 
 export function BitacoraPage() {
   const { entries, uploads, stats, loading, uploading, error, month, year, setMonth, setYear, uploadRoster, saveFlight, saveEntry, yearlyCurrentData, yearlyPreviousData, yearlyLoading } = useLogbook()
@@ -147,8 +147,8 @@ export function BitacoraPage() {
             </div>
           </div>
 
-          {/* C/I and C/O (Local) */}
-          <div className="flex items-center gap-4 mb-2 text-xs">
+          {/* C/I and C/O (Local) + Jornada Programada */}
+          <div className="flex items-center gap-4 mb-1 text-xs">
             {todayEntry.check_in && (
               <span className="text-gray-300 font-mono">
                 <span className="text-gray-500 font-sans">C/I</span> {formatHHMM(todayEntry.check_in)}
@@ -168,9 +168,15 @@ export function BitacoraPage() {
                 <span className="text-gray-500">C/O</span> pendiente
               </span>
             ) : null}
+            {todayEntry.check_in && todayEntry.check_out && (
+              <span className="text-blue-400 font-mono text-[11px]">
+                {formatDecimalHours(calculateDuration(formatHHMM(todayEntry.check_in), formatHHMM(todayEntry.check_out)))}h
+                <span className="text-blue-400/50 font-sans text-[10px] ml-0.5">prog</span>
+              </span>
+            )}
           </div>
 
-          {/* Zulu Duty Times (editable) */}
+          {/* Zulu Duty Times (editable) - below local times */}
           {(todayEntry.check_in || todayEntry.duty_start_zulu) && (
             <div className="mb-3">
               <DutyZuluEditor
@@ -334,10 +340,15 @@ export function BitacoraPage() {
                     ) : entry.check_in ? (
                       <span className="text-amber-400/50 italic">C/O --:--</span>
                     ) : null}
+                    {entry.check_in && entry.check_out && (
+                      <span className="font-mono text-blue-400 text-[11px]">
+                        {formatDecimalHours(calculateDuration(formatHHMM(entry.check_in), formatHHMM(entry.check_out)))}h
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                {/* Zulu Duty Times (editable) */}
+                {/* Zulu Duty Times (editable) - below */}
                 {(entry.check_in || entry.duty_start_zulu) && (
                   <div className="mb-2 ml-[52px]">
                     <DutyZuluEditor
