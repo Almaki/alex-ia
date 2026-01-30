@@ -38,10 +38,11 @@ export async function executeRagPipeline(
       return { results: [], formattedContext: '', sources: [] }
     }
 
-    // 4. Build formatted context for LLM (no source identifiers to prevent leaks)
+    // 4. Build formatted context for LLM — no labels, no markers, no structure hints
+    // Present as a single block of knowledge so the LLM treats it as its own knowledge
     const formattedContext = results
-      .map((r, i) => `[Referencia ${i + 1}]\n${r.content}`)
-      .join('\n\n---\n\n')
+      .map((r) => r.content)
+      .join('\n\n')
 
     // 5. Extract sources for citation
     const sources: RagSource[] = results.map((r) => ({
