@@ -9,8 +9,10 @@ interface DutyZuluEditorProps {
   checkOut: string | null
   dutyStartZulu: string | null
   dutyEndZulu: string | null
-  /** First flight origin IATA to compute auto-Zulu */
+  /** First flight origin IATA — C/I is in this airport's local time */
   originIATA: string | null
+  /** Last flight destination IATA — C/O is in this airport's local time */
+  destinationIATA: string | null
   onSave: (entryId: string, updates: { duty_start_zulu: string | null; duty_end_zulu: string | null }) => Promise<boolean>
 }
 
@@ -21,17 +23,20 @@ export function DutyZuluEditor({
   dutyStartZulu,
   dutyEndZulu,
   originIATA,
+  destinationIATA,
   onSave,
 }: DutyZuluEditorProps) {
-  // Auto-compute Zulu from local times + airport UTC offset
+  // Auto-compute Zulu from local times + each airport's UTC offset
+  // C/I local → Zulu using ORIGIN offset
+  // C/O local → Zulu using DESTINATION offset
   const autoZulu = useMemo(() => {
-    if (!originIATA) return { start: null, end: null }
-    const offset = getAirportUtcOffset(originIATA)
+    const originOffset = originIATA ? getAirportUtcOffset(originIATA) : null
+    const destOffset = destinationIATA ? getAirportUtcOffset(destinationIATA) : originOffset
     return {
-      start: localToZulu(checkIn, offset),
-      end: localToZulu(checkOut, offset),
+      start: originOffset != null ? localToZulu(checkIn, originOffset) : null,
+      end: destOffset != null ? localToZulu(checkOut, destOffset) : null,
     }
-  }, [checkIn, checkOut, originIATA])
+  }, [checkIn, checkOut, originIATA, destinationIATA])
 
   // Use saved values if available, otherwise auto-computed
   const effectiveStart = dutyStartZulu ? formatHHMM(dutyStartZulu) : (autoZulu.start ?? '--:--')

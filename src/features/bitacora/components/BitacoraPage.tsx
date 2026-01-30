@@ -5,7 +5,7 @@ import { useLogbook } from '../hooks/useLogbook'
 import { YearlyComparisonChart } from './YearlyComparisonChart'
 import { FlightDetailEditor } from './FlightDetailEditor'
 import { DutyZuluEditor } from './DutyZuluEditor'
-import { calculateDuration, formatDecimalHours, formatHHMM, formatZulu, isOvernightDuty } from '../utils/date-helpers'
+import { calculateDuration, formatDecimalHours, formatHHMM, formatZulu, isOvernightDuty, zuluDutyDuration } from '../utils/date-helpers'
 
 export function BitacoraPage() {
   const { entries, uploads, stats, loading, uploading, error, month, year, setMonth, setYear, uploadRoster, saveFlight, saveEntry, yearlyCurrentData, yearlyPreviousData, yearlyLoading } = useLogbook()
@@ -168,12 +168,18 @@ export function BitacoraPage() {
                 <span className="text-gray-500">C/O</span> pendiente
               </span>
             ) : null}
-            {todayEntry.check_in && todayEntry.check_out && (
-              <span className="text-blue-400 font-mono text-[11px]">
-                {formatDecimalHours(calculateDuration(formatHHMM(todayEntry.check_in), formatHHMM(todayEntry.check_out)))}h
-                <span className="text-blue-400/50 font-sans text-[10px] ml-0.5">prog</span>
-              </span>
-            )}
+            {todayEntry.check_in && todayEntry.check_out && (() => {
+              const originIATA = todayEntry.flights?.[0]?.origin || null
+              const destIATA = todayEntry.flights?.length ? todayEntry.flights[todayEntry.flights.length - 1]?.destination : null
+              const zuluHrs = zuluDutyDuration(todayEntry.check_in, todayEntry.check_out, originIATA, destIATA)
+              const displayHrs = zuluHrs ?? calculateDuration(formatHHMM(todayEntry.check_in), formatHHMM(todayEntry.check_out))
+              return (
+                <span className="text-blue-400 font-mono text-[11px]">
+                  {formatDecimalHours(displayHrs)}h
+                  <span className="text-blue-400/50 font-sans text-[10px] ml-0.5">prog</span>
+                </span>
+              )
+            })()}
           </div>
 
           {/* Zulu Duty Times (editable) - below local times */}
@@ -186,6 +192,7 @@ export function BitacoraPage() {
                 dutyStartZulu={todayEntry.duty_start_zulu}
                 dutyEndZulu={todayEntry.duty_end_zulu}
                 originIATA={todayEntry.flights?.[0]?.origin || null}
+                destinationIATA={todayEntry.flights?.length ? todayEntry.flights[todayEntry.flights.length - 1]?.destination || null : null}
                 onSave={saveEntry}
               />
             </div>
@@ -340,11 +347,17 @@ export function BitacoraPage() {
                     ) : entry.check_in ? (
                       <span className="text-amber-400/50 italic">C/O --:--</span>
                     ) : null}
-                    {entry.check_in && entry.check_out && (
-                      <span className="font-mono text-blue-400 text-[11px]">
-                        {formatDecimalHours(calculateDuration(formatHHMM(entry.check_in), formatHHMM(entry.check_out)))}h
-                      </span>
-                    )}
+                    {entry.check_in && entry.check_out && (() => {
+                      const oIATA = entry.flights?.[0]?.origin || null
+                      const dIATA = entry.flights?.length ? entry.flights[entry.flights.length - 1]?.destination : null
+                      const zHrs = zuluDutyDuration(entry.check_in, entry.check_out, oIATA, dIATA)
+                      const dHrs = zHrs ?? calculateDuration(formatHHMM(entry.check_in), formatHHMM(entry.check_out))
+                      return (
+                        <span className="font-mono text-blue-400 text-[11px]">
+                          {formatDecimalHours(dHrs)}h
+                        </span>
+                      )
+                    })()}
                   </div>
                 </div>
 
@@ -358,6 +371,7 @@ export function BitacoraPage() {
                       dutyStartZulu={entry.duty_start_zulu}
                       dutyEndZulu={entry.duty_end_zulu}
                       originIATA={entry.flights?.[0]?.origin || null}
+                      destinationIATA={entry.flights?.length ? entry.flights[entry.flights.length - 1]?.destination || null : null}
                       onSave={saveEntry}
                     />
                   </div>

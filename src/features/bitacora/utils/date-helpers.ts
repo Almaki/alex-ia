@@ -263,3 +263,24 @@ export function localToZulu(localTime: string | null, utcOffset: number): string
   const m = minutes % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
+
+/**
+ * Compute duty duration in hours using Zulu-aware conversion.
+ * C/I is in origin local time, C/O is in destination local time.
+ * Converts both to Zulu first, then computes the difference.
+ * Returns hours (decimal) or null if inputs are missing.
+ */
+export function zuluDutyDuration(
+  checkIn: string | null,
+  checkOut: string | null,
+  originIATA: string | null,
+  destinationIATA: string | null
+): number | null {
+  if (!checkIn || !checkOut) return null
+  const originOffset = originIATA ? getAirportUtcOffset(originIATA) : DEFAULT_UTC_OFFSET
+  const destOffset = destinationIATA ? getAirportUtcOffset(destinationIATA) : DEFAULT_UTC_OFFSET
+  const startZ = localToZulu(checkIn, originOffset)
+  const endZ = localToZulu(checkOut, destOffset)
+  if (!startZ || !endZ) return null
+  return calculateDuration(startZ, endZ)
+}
