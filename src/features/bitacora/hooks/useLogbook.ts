@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getLogbookEntries, getRosterUploads, getMonthlyStats, getYearlyStats, updateLogbookFlight } from '../services/bitacora-actions'
-import type { YearlyMonthStats } from '../services/bitacora-actions'
+import { getLogbookEntries, getRosterUploads, getMonthlyStats, getYearlyStats, updateLogbookFlight, updateLogbookEntry } from '../services/bitacora-actions'
+import type { YearlyMonthStats, MonthlyDualStats } from '../services/bitacora-actions'
 
 interface LogbookFlight {
   id: string
@@ -30,6 +30,8 @@ interface LogbookEntry {
   activity_type: string
   check_in: string | null
   check_out: string | null
+  duty_start_zulu: string | null
+  duty_end_zulu: string | null
   hotel: string | null
   notes: string | null
   crew_captain: string | null
@@ -45,14 +47,7 @@ interface RosterUpload {
   created_at: string
 }
 
-interface MonthlyStats {
-  totalFlights: number
-  totalBlockHours: number
-  totalFlightHours: number
-  totalDutyHours: number
-  nightFlights: number
-  pfFlights: number
-}
+type MonthlyStats = MonthlyDualStats
 
 export function useLogbook() {
   const now = new Date()
@@ -165,6 +160,29 @@ export function useLogbook() {
     return true
   }, [month, year])
 
+  const saveEntry = useCallback(async (
+    entryId: string,
+    updates: Partial<Pick<LogbookEntry, 'duty_start_zulu' | 'duty_end_zulu'>>
+  ) => {
+    const { error: err } = await updateLogbookEntry(entryId, updates)
+    if (err) {
+      setError(err)
+      return false
+    }
+    // Update local state
+    setEntries((prev) =>
+      prev.map((entry) =>
+        entry.id === entryId ? { ...entry, ...updates } : entry
+      )
+    )
+    // Refresh stats
+    const statsResult = await getMonthlyStats(month, year)
+    if (!statsResult.error && statsResult.data) {
+      setStats(statsResult.data)
+    }
+    return true
+  }, [month, year])
+
   return {
     entries,
     uploads,
@@ -178,6 +196,7 @@ export function useLogbook() {
     setYear,
     uploadRoster,
     saveFlight,
+    saveEntry,
     refresh: fetchData,
     yearlyCurrentData,
     yearlyPreviousData,

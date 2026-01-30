@@ -8,6 +8,8 @@ export interface LogbookEntry {
   activity_type: ActivityType
   check_in: string | null
   check_out: string | null
+  duty_start_zulu: string | null
+  duty_end_zulu: string | null
   hotel: string | null
   notes: string | null
   crew_captain: string | null
@@ -61,6 +63,21 @@ export interface LogbookStats {
   totalFlights: number
   totalBlockHours: number
   totalFlightHours: number
+  nightFlights: number
+  pfFlights: number
+}
+
+/** Dual stats: roster (scheduled) vs actual (entered) with projection */
+export interface MonthlyDualStats {
+  totalFlights: number
+  rosterFlightHours: number
+  actualFlightHours: number
+  projectedFlightHours: number
+  rosterBlockHours: number
+  actualBlockHours: number
+  rosterDutyHours: number
+  actualDutyHours: number
+  projectedDutyHours: number
   nightFlights: number
   pfFlights: number
 }

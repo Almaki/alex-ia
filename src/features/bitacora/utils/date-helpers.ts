@@ -221,3 +221,45 @@ export function isOvernightDuty(checkIn: string | null, checkOut: string | null)
   const coMinutes = timeToMinutes(formatHHMM(checkOut))
   return coMinutes < ciMinutes
 }
+
+/**
+ * UTC offset (hours to ADD to local time to get Zulu) for Mexican airports.
+ * Post-2022 DST reform: most of Mexico uses fixed offsets year-round.
+ *  - Centro (UTC-6): most airports
+ *  - Sureste (UTC-5): Quintana Roo
+ *  - Pacifico (UTC-7): Sonora, Baja California Sur, Sinaloa, Nayarit
+ *  - Noroeste (UTC-8): Baja California (follows US Pacific, simplified to -8)
+ */
+const AIRPORT_UTC_OFFSETS: Record<string, number> = {
+  // UTC-5 (Quintana Roo)
+  CUN: 5, CZM: 5,
+  // UTC-7 (Pacifico / Sonora)
+  HMO: 7, SJD: 7, PVR: 7, MZT: 7, LMM: 7, CUL: 7, CLQ: 7, LAP: 7, GYM: 7,
+  // UTC-8 (Noroeste / Baja California)
+  TIJ: 8, MXL: 8,
+  // UTC-6 is default for everything else (Centro)
+}
+const DEFAULT_UTC_OFFSET = 6
+
+/**
+ * Get UTC offset (hours to add) for an IATA airport code.
+ */
+export function getAirportUtcOffset(iata: string): number {
+  return AIRPORT_UTC_OFFSETS[iata.toUpperCase()] ?? DEFAULT_UTC_OFFSET
+}
+
+/**
+ * Convert a local HH:MM time to Zulu HH:MM by adding the UTC offset.
+ * Returns HH:MM string in 24h format (wraps past midnight).
+ */
+export function localToZulu(localTime: string | null, utcOffset: number): string | null {
+  if (!localTime) return null
+  const hhmm = formatHHMM(localTime)
+  if (hhmm === '--:--') return null
+  let minutes = timeToMinutes(hhmm) + utcOffset * 60
+  if (minutes >= 24 * 60) minutes -= 24 * 60
+  if (minutes < 0) minutes += 24 * 60
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}

@@ -9,6 +9,8 @@ interface LogbookEntry {
   activity_type: string
   check_in: string | null
   check_out: string | null
+  duty_start_zulu: string | null
+  duty_end_zulu: string | null
   hotel: string | null
   notes: string | null
   crew_captain: string | null
@@ -65,7 +67,7 @@ export async function getLogbookEntries(
 
   const { data: entries, error } = await supabase
     .from('logbook_entries')
-    .select('id, entry_date, activity_type, check_in, check_out, hotel, notes, crew_captain, crew_first_officer, crew_purser')
+    .select('id, entry_date, activity_type, check_in, check_out, duty_start_zulu, duty_end_zulu, hotel, notes, crew_captain, crew_first_officer, crew_purser')
     .eq('user_id', user.id)
     .gte('entry_date', startDate)
     .lt('entry_date', endDate)
@@ -111,7 +113,7 @@ export async function getRosterUploads(): Promise<{ data: RosterUpload[]; error:
 
 export async function updateLogbookEntry(
   entryId: string,
-  updates: Partial<Pick<LogbookEntry, 'activity_type' | 'check_in' | 'check_out' | 'hotel' | 'notes' | 'crew_captain' | 'crew_first_officer' | 'crew_purser'>>
+  updates: Partial<Pick<LogbookEntry, 'activity_type' | 'check_in' | 'check_out' | 'duty_start_zulu' | 'duty_end_zulu' | 'hotel' | 'notes' | 'crew_captain' | 'crew_first_officer' | 'crew_purser'>>
 ): Promise<{ error: string | null }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -250,20 +252,33 @@ export async function getLogbookStats(userId?: string): Promise<{
   return { data: stats, error: null }
 }
 
+export interface MonthlyDualStats {
+  totalFlights: number
+  rosterFlightHours: number
+  actualFlightHours: number
+  projectedFlightHours: number
+  rosterBlockHours: number
+  actualBlockHours: number
+  rosterDutyHours: number
+  actualDutyHours: number
+  projectedDutyHours: number
+  nightFlights: number
+  pfFlights: number
+}
+
+function parseDurationMinutes(start: string | null, end: string | null): number {
+  if (!start || !end) return 0
+  const [sH, sM] = start.split(':').map(Number)
+  const [eH, eM] = end.split(':').map(Number)
+  let diff = (eH * 60 + eM) - (sH * 60 + sM)
+  if (diff < 0) diff += 24 * 60
+  return diff
+}
+
 export async function getMonthlyStats(
   month: number,
   year: number
-): Promise<{
-  data: {
-    totalFlights: number
-    totalBlockHours: number
-    totalFlightHours: number
-    totalDutyHours: number
-    nightFlights: number
-    pfFlights: number
-  } | null
-  error: string | null
-}> {
+): Promise<{ data: MonthlyDualStats | null; error: string | null }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -274,29 +289,38 @@ export async function getMonthlyStats(
     ? `${year + 1}-01-01`
     : `${year}-${String(month + 1).padStart(2, '0')}-01`
 
+  const empty: MonthlyDualStats = {
+    totalFlights: 0, rosterFlightHours: 0, actualFlightHours: 0,
+    projectedFlightHours: 0, rosterBlockHours: 0, actualBlockHours: 0,
+    rosterDutyHours: 0, actualDutyHours: 0, projectedDutyHours: 0,
+    nightFlights: 0, pfFlights: 0,
+  }
+
   const { data: entries } = await supabase
     .from('logbook_entries')
-    .select('id, check_in, check_out')
+    .select('id, check_in, check_out, duty_start_zulu, duty_end_zulu')
     .eq('user_id', user.id)
     .gte('entry_date', startDate)
     .lt('entry_date', endDate)
 
-  if (!entries || entries.length === 0) {
-    return {
-      data: { totalFlights: 0, totalBlockHours: 0, totalFlightHours: 0, totalDutyHours: 0, nightFlights: 0, pfFlights: 0 },
-      error: null,
-    }
-  }
+  if (!entries || entries.length === 0) return { data: empty, error: null }
 
-  // Calculate duty hours from check_in/check_out
-  let totalDutyMinutes = 0
+  // Duty hours: roster (local C/I-C/O) vs actual (Zulu start-end)
+  let rosterDutyMinutes = 0
+  let actualDutyMinutes = 0
+  let projectedDutyMinutes = 0
+
   for (const entry of entries) {
-    if (entry.check_in && entry.check_out) {
-      const [ciH, ciM] = entry.check_in.split(':').map(Number)
-      const [coH, coM] = entry.check_out.split(':').map(Number)
-      let dutyMin = (coH * 60 + coM) - (ciH * 60 + ciM)
-      if (dutyMin < 0) dutyMin += 24 * 60 // overnight
-      totalDutyMinutes += dutyMin
+    const rosterMin = parseDurationMinutes(entry.check_in, entry.check_out)
+    rosterDutyMinutes += rosterMin
+
+    const hasActualZulu = entry.duty_start_zulu && entry.duty_end_zulu
+    if (hasActualZulu) {
+      const actualMin = parseDurationMinutes(entry.duty_start_zulu, entry.duty_end_zulu)
+      actualDutyMinutes += actualMin
+      projectedDutyMinutes += actualMin
+    } else {
+      projectedDutyMinutes += rosterMin
     }
   }
 
@@ -304,24 +328,56 @@ export async function getMonthlyStats(
 
   const { data: flights } = await supabase
     .from('logbook_flights')
-    .select('block_hours, flight_hours, is_night, is_pf')
+    .select('std, sta, block_hours, flight_hours, is_night, is_pf')
     .in('entry_id', entryIds)
 
-  const flightStats = (flights || []).reduce(
-    (acc, f) => ({
-      totalFlights: acc.totalFlights + 1,
-      totalBlockHours: acc.totalBlockHours + (f.block_hours || 0),
-      totalFlightHours: acc.totalFlightHours + (f.flight_hours || 0),
-      nightFlights: acc.nightFlights + (f.is_night ? 1 : 0),
-      pfFlights: acc.pfFlights + (f.is_pf ? 1 : 0),
-    }),
-    { totalFlights: 0, totalBlockHours: 0, totalFlightHours: 0, nightFlights: 0, pfFlights: 0 }
-  )
+  let totalFlights = 0
+  let rosterFlightMin = 0
+  let actualFlightHours = 0
+  let projectedFlightHours = 0
+  let rosterBlockMin = 0
+  let actualBlockHours = 0
+  let nightFlights = 0
+  let pfFlights = 0
+
+  for (const f of flights || []) {
+    totalFlights++
+    nightFlights += f.is_night ? 1 : 0
+    pfFlights += f.is_pf ? 1 : 0
+
+    // Roster: from STD/STA
+    const rosterMin = parseDurationMinutes(f.std, f.sta)
+    rosterFlightMin += rosterMin
+    rosterBlockMin += rosterMin // same estimate for block from schedule
+
+    // Actual: from entered values
+    if (f.flight_hours != null) {
+      actualFlightHours += f.flight_hours
+      projectedFlightHours += f.flight_hours
+    } else {
+      projectedFlightHours += rosterMin / 60
+    }
+
+    if (f.block_hours != null) {
+      actualBlockHours += f.block_hours
+    }
+  }
+
+  const r = (n: number) => Math.round(n * 100) / 100
 
   return {
     data: {
-      ...flightStats,
-      totalDutyHours: Math.round((totalDutyMinutes / 60) * 100) / 100,
+      totalFlights,
+      rosterFlightHours: r(rosterFlightMin / 60),
+      actualFlightHours: r(actualFlightHours),
+      projectedFlightHours: r(projectedFlightHours),
+      rosterBlockHours: r(rosterBlockMin / 60),
+      actualBlockHours: r(actualBlockHours),
+      rosterDutyHours: r(rosterDutyMinutes / 60),
+      actualDutyHours: r(actualDutyMinutes / 60),
+      projectedDutyHours: r(projectedDutyMinutes / 60),
+      nightFlights,
+      pfFlights,
     },
     error: null,
   }
@@ -443,7 +499,7 @@ export async function getYearlyStats(year: number): Promise<{
 
   const { data: entries } = await supabase
     .from('logbook_entries')
-    .select('id, entry_date, check_in, check_out')
+    .select('id, entry_date, check_in, check_out, duty_start_zulu, duty_end_zulu')
     .eq('user_id', user.id)
     .gte('entry_date', startDate)
     .lt('entry_date', endDate)
@@ -461,12 +517,11 @@ export async function getYearlyStats(year: number): Promise<{
     if (!entryIdsByMonth.has(m)) entryIdsByMonth.set(m, [])
     entryIdsByMonth.get(m)!.push(entry.id)
 
-    if (entry.check_in && entry.check_out) {
-      const [ciH, ciM] = entry.check_in.split(':').map(Number)
-      const [coH, coM] = entry.check_out.split(':').map(Number)
-      let dutyMin = (coH * 60 + coM) - (ciH * 60 + ciM)
-      if (dutyMin < 0) dutyMin += 24 * 60
-      dutyMinutesByMonth.set(m, (dutyMinutesByMonth.get(m) || 0) + dutyMin)
+    // Use actual Zulu duty if available, otherwise roster local
+    if (entry.duty_start_zulu && entry.duty_end_zulu) {
+      dutyMinutesByMonth.set(m, (dutyMinutesByMonth.get(m) || 0) + parseDurationMinutes(entry.duty_start_zulu, entry.duty_end_zulu))
+    } else if (entry.check_in && entry.check_out) {
+      dutyMinutesByMonth.set(m, (dutyMinutesByMonth.get(m) || 0) + parseDurationMinutes(entry.check_in, entry.check_out))
     }
   }
 

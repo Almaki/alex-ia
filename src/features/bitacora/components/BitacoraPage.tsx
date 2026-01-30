@@ -4,10 +4,11 @@ import { useState, useRef, useCallback } from 'react'
 import { useLogbook } from '../hooks/useLogbook'
 import { YearlyComparisonChart } from './YearlyComparisonChart'
 import { FlightDetailEditor } from './FlightDetailEditor'
-import { formatDecimalHours, formatZulu, isOvernightDuty } from '../utils/date-helpers'
+import { DutyZuluEditor } from './DutyZuluEditor'
+import { formatDecimalHours, formatHHMM, formatZulu, isOvernightDuty } from '../utils/date-helpers'
 
 export function BitacoraPage() {
-  const { entries, uploads, stats, loading, uploading, error, month, year, setMonth, setYear, uploadRoster, saveFlight, yearlyCurrentData, yearlyPreviousData, yearlyLoading } = useLogbook()
+  const { entries, uploads, stats, loading, uploading, error, month, year, setMonth, setYear, uploadRoster, saveFlight, saveEntry, yearlyCurrentData, yearlyPreviousData, yearlyLoading } = useLogbook()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
   const [expandedFlightId, setExpandedFlightId] = useState<string | null>(null)
@@ -146,16 +147,18 @@ export function BitacoraPage() {
             </div>
           </div>
 
-          {/* C/I and C/O (Zulu) */}
-          <div className="flex items-center gap-4 mb-3 text-xs">
+          {/* C/I and C/O (Local) */}
+          <div className="flex items-center gap-4 mb-2 text-xs">
             {todayEntry.check_in && (
               <span className="text-gray-300 font-mono">
-                <span className="text-gray-500 font-sans">C/I</span> {formatZulu(todayEntry.check_in)}
+                <span className="text-gray-500 font-sans">C/I</span> {formatHHMM(todayEntry.check_in)}
+                <span className="text-gray-600 text-[10px] ml-0.5">L</span>
               </span>
             )}
             {todayEntry.check_out ? (
               <span className="text-gray-300 font-mono">
-                <span className="text-gray-500 font-sans">C/O</span> {formatZulu(todayEntry.check_out)}
+                <span className="text-gray-500 font-sans">C/O</span> {formatHHMM(todayEntry.check_out)}
+                <span className="text-gray-600 text-[10px] ml-0.5">L</span>
                 {isOvernightDuty(todayEntry.check_in, todayEntry.check_out) && (
                   <span className="ml-1 text-amber-400/70 text-[10px] font-sans">+1d</span>
                 )}
@@ -166,6 +169,21 @@ export function BitacoraPage() {
               </span>
             ) : null}
           </div>
+
+          {/* Zulu Duty Times (editable) */}
+          {(todayEntry.check_in || todayEntry.duty_start_zulu) && (
+            <div className="mb-3">
+              <DutyZuluEditor
+                entryId={todayEntry.id}
+                checkIn={todayEntry.check_in}
+                checkOut={todayEntry.check_out}
+                dutyStartZulu={todayEntry.duty_start_zulu}
+                dutyEndZulu={todayEntry.duty_end_zulu}
+                originIATA={todayEntry.flights?.[0]?.origin || null}
+                onSave={saveEntry}
+              />
+            </div>
+          )}
 
           {/* Today's flights */}
           {todayEntry.flights && todayEntry.flights.length > 0 && (
@@ -304,11 +322,11 @@ export function BitacoraPage() {
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-500">
                     {entry.check_in && (
-                      <span className="font-mono">C/I {formatZulu(entry.check_in)}</span>
+                      <span className="font-mono">C/I {formatHHMM(entry.check_in)}<span className="text-[10px] ml-0.5">L</span></span>
                     )}
                     {entry.check_out ? (
                       <span className="font-mono">
-                        C/O {formatZulu(entry.check_out)}
+                        C/O {formatHHMM(entry.check_out)}<span className="text-[10px] ml-0.5">L</span>
                         {isOvernightDuty(entry.check_in, entry.check_out) && (
                           <span className="ml-1 text-amber-400/70 text-[10px] font-sans">+1d</span>
                         )}
@@ -318,6 +336,21 @@ export function BitacoraPage() {
                     ) : null}
                   </div>
                 </div>
+
+                {/* Zulu Duty Times (editable) */}
+                {(entry.check_in || entry.duty_start_zulu) && (
+                  <div className="mb-2 ml-[52px]">
+                    <DutyZuluEditor
+                      entryId={entry.id}
+                      checkIn={entry.check_in}
+                      checkOut={entry.check_out}
+                      dutyStartZulu={entry.duty_start_zulu}
+                      dutyEndZulu={entry.duty_end_zulu}
+                      originIATA={entry.flights?.[0]?.origin || null}
+                      onSave={saveEntry}
+                    />
+                  </div>
+                )}
 
                 {/* Flights */}
                 {entry.flights && entry.flights.length > 0 && (
@@ -401,42 +434,117 @@ export function BitacoraPage() {
         </div>
       )}
 
-      {/* MONTHLY SUMMARY CARD */}
+      {/* MONTHLY SUMMARY CARD - Dual Stats */}
       {stats && !loading && (
         <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-4 md:p-6">
-          <h3 className="text-sm font-semibold text-white mb-4">
+          <h3 className="text-sm font-semibold text-white mb-2">
             Resumen {monthNames[month - 1]} {year}
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-blue-400">{stats.totalFlights}</p>
-              <p className="text-xs text-gray-400 mt-1">Vuelos</p>
+          {/* Legend */}
+          <div className="flex items-center gap-4 mb-4 text-[10px]">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-blue-400" />
+              <span className="text-gray-500">Roster</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="text-gray-500">Real</span>
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span className="text-gray-500">Proyeccion</span>
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {/* Flights count */}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-gray-400">Vuelos</p>
+                <p className="text-xl font-bold text-blue-400">{stats.totalFlights}</p>
+              </div>
             </div>
-            <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-purple-400">
-                {formatDecimalHours(stats.totalBlockHours)}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">Horas Block</p>
+
+            {/* Flight Hours: Roster vs Actual vs Projection */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-2">Horas de Vuelo</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-blue-400">{formatDecimalHours(stats.rosterFlightHours)}</p>
+                  <p className="text-[10px] text-blue-400/60">Roster</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-emerald-400">{formatDecimalHours(stats.actualFlightHours)}</p>
+                  <p className="text-[10px] text-emerald-400/60">Real</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-amber-400">{formatDecimalHours(stats.projectedFlightHours)}</p>
+                  <p className="text-[10px] text-amber-400/60">Proyeccion</p>
+                </div>
+              </div>
+              {/* Progress bar */}
+              {stats.rosterFlightHours > 0 && (
+                <div className="mt-2 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, (stats.actualFlightHours / stats.rosterFlightHours) * 100)}%` }}
+                  />
+                </div>
+              )}
             </div>
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-amber-400">
-                {formatDecimalHours(stats.totalFlightHours)}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">Horas Vuelo</p>
+
+            {/* Block Hours: Roster vs Actual */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-2">Horas Block</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-blue-400">{formatDecimalHours(stats.rosterBlockHours)}</p>
+                  <p className="text-[10px] text-blue-400/60">Roster</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-emerald-400">{formatDecimalHours(stats.actualBlockHours)}</p>
+                  <p className="text-[10px] text-emerald-400/60">Real</p>
+                </div>
+              </div>
             </div>
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-emerald-400">
-                {formatDecimalHours(stats.totalDutyHours)}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">Horas Jornada</p>
+
+            {/* Duty Hours: Roster vs Actual vs Projection */}
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <p className="text-xs text-gray-400 mb-2">Horas de Jornada</p>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-blue-400">{formatDecimalHours(stats.rosterDutyHours)}</p>
+                  <p className="text-[10px] text-blue-400/60">Roster</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-emerald-400">{formatDecimalHours(stats.actualDutyHours)}</p>
+                  <p className="text-[10px] text-emerald-400/60">Real</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-amber-400">{formatDecimalHours(stats.projectedDutyHours)}</p>
+                  <p className="text-[10px] text-amber-400/60">Proyeccion</p>
+                </div>
+              </div>
+              {stats.rosterDutyHours > 0 && (
+                <div className="mt-2 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
+                    style={{ width: `${Math.min(100, (stats.actualDutyHours / stats.rosterDutyHours) * 100)}%` }}
+                  />
+                </div>
+              )}
             </div>
-            <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-indigo-400">{stats.nightFlights}</p>
-              <p className="text-xs text-gray-400 mt-1">Nocturnos</p>
-            </div>
-            <div className="bg-pink-500/10 border border-pink-500/20 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-pink-400">{stats.pfFlights}</p>
-              <p className="text-xs text-gray-400 mt-1">PF (Pilot Flying)</p>
+
+            {/* Night + PF row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-indigo-400">{stats.nightFlights}</p>
+                <p className="text-[10px] text-gray-400">Nocturnos</p>
+              </div>
+              <div className="bg-pink-500/10 border border-pink-500/20 rounded-xl p-3 text-center">
+                <p className="text-xl font-bold text-pink-400">{stats.pfFlights}</p>
+                <p className="text-[10px] text-gray-400">PF</p>
+              </div>
             </div>
           </div>
         </div>
