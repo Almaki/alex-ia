@@ -3,30 +3,14 @@
 import { useState, useRef, useCallback } from 'react'
 import { useLogbook } from '../hooks/useLogbook'
 import { YearlyComparisonChart } from './YearlyComparisonChart'
-
-/** Strip seconds from time strings: "HH:MM:SS" -> "HH:MM", "HH:MM" -> "HH:MM" */
-function formatHHMM(time: string | null): string {
-  if (!time) return '--:--'
-  const parts = time.split(':')
-  if (parts.length < 2) return time
-  const h = parts[0].padStart(2, '0')
-  const m = String(Math.min(59, parseInt(parts[1], 10) || 0)).padStart(2, '0')
-  return `${h}:${m}`
-}
-
-function formatDecimalHours(hours: number): string {
-  const h = Math.floor(hours)
-  const m = Math.round((hours - h) * 60)
-  return `${h}:${String(Math.min(59, m)).padStart(2, '0')}`
-}
+import { FlightDetailEditor } from './FlightDetailEditor'
+import { formatHHMM, formatDecimalHours } from '../utils/date-helpers'
 
 export function BitacoraPage() {
   const { entries, uploads, stats, loading, uploading, error, month, year, setMonth, setYear, uploadRoster, saveFlight, yearlyCurrentData, yearlyPreviousData, yearlyLoading } = useLogbook()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [dragActive, setDragActive] = useState(false)
-  const [editingFlight, setEditingFlight] = useState<string | null>(null)
-  const [editValues, setEditValues] = useState<{ block_hours: string; flight_hours: string }>({ block_hours: '', flight_hours: '' })
-  const [saving, setSaving] = useState(false)
+  const [expandedFlightId, setExpandedFlightId] = useState<string | null>(null)
 
   const handleFile = useCallback(async (file: File) => {
     await uploadRoster(file)
@@ -55,29 +39,9 @@ export function BitacoraPage() {
     else setMonth(month + 1)
   }
 
-  const startEditFlight = (flightId: string, blockHours: number | null, flightHours: number | null) => {
-    setEditingFlight(flightId)
-    setEditValues({
-      block_hours: blockHours?.toString() || '',
-      flight_hours: flightHours?.toString() || '',
-    })
-  }
-
-  const cancelEdit = () => {
-    setEditingFlight(null)
-    setEditValues({ block_hours: '', flight_hours: '' })
-  }
-
-  const handleSaveFlight = async () => {
-    if (!editingFlight) return
-    setSaving(true)
-    const updates: { block_hours?: number; flight_hours?: number } = {}
-    if (editValues.block_hours) updates.block_hours = parseFloat(editValues.block_hours)
-    if (editValues.flight_hours) updates.flight_hours = parseFloat(editValues.flight_hours)
-    await saveFlight(editingFlight, updates)
-    setSaving(false)
-    setEditingFlight(null)
-  }
+  const toggleFlight = useCallback((flightId: string) => {
+    setExpandedFlightId((prev) => (prev === flightId ? null : flightId))
+  }, [])
 
   const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
   const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado']
@@ -204,74 +168,45 @@ export function BitacoraPage() {
           {todayEntry.flights && todayEntry.flights.length > 0 && (
             <div className="space-y-2">
               {todayEntry.flights.map((flight) => {
-                const isEditing = editingFlight === flight.id
+                const isExpanded = expandedFlightId === flight.id
 
                 return (
-                  <div key={flight.id} className="bg-black/20 rounded-lg p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="text-xs font-mono font-bold text-amber-400 w-16 shrink-0">
-                        {flight.flight_number || '-'}
-                      </div>
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className="text-sm font-bold text-white">{flight.origin}</span>
-                        <svg className="w-4 h-4 text-amber-500/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                        <span className="text-sm font-bold text-white">{flight.destination}</span>
-                      </div>
-                      <div className="text-xs text-gray-400 shrink-0">
-                        {formatHHMM(flight.std)}{flight.std && flight.sta && ' - '}{formatHHMM(flight.sta)}
-                      </div>
-                      {!isEditing ? (
-                        <button
-                          onClick={() => startEditFlight(flight.id, flight.block_hours, flight.flight_hours)}
-                          className="text-xs font-medium text-purple-400 shrink-0 hover:text-purple-300 transition-colors px-2 py-1 rounded hover:bg-purple-500/10"
-                          title="Editar horas"
-                        >
-                          {flight.block_hours != null ? formatDecimalHours(flight.block_hours) : '--:--'}
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-1 shrink-0">
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[9px] text-gray-500">BLK</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editValues.block_hours}
-                              onChange={(e) => setEditValues((v) => ({ ...v, block_hours: e.target.value }))}
-                              className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <label className="text-[9px] text-gray-500">FLT</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editValues.flight_hours}
-                              onChange={(e) => setEditValues((v) => ({ ...v, flight_hours: e.target.value }))}
-                              className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
-                              placeholder="0.00"
-                            />
-                          </div>
-                          <div className="flex flex-col gap-1 ml-1">
-                            <button
-                              onClick={handleSaveFlight}
-                              disabled={saving}
-                              className="px-2 py-1 text-[10px] font-medium bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 transition-colors"
-                            >
-                              {saving ? '...' : 'OK'}
-                            </button>
-                            <button
-                              onClick={cancelEdit}
-                              className="px-2 py-1 text-[10px] font-medium text-gray-400 rounded hover:bg-white/10 transition-colors"
-                            >
-                              X
-                            </button>
-                          </div>
+                  <div key={flight.id}>
+                    <button
+                      onClick={() => toggleFlight(flight.id)}
+                      className={`w-full bg-black/20 rounded-lg p-3 text-left transition-all ${
+                        isExpanded ? 'ring-1 ring-amber-500/30' : 'hover:bg-black/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-xs font-mono font-bold text-amber-400 w-16 shrink-0">
+                          {flight.flight_number || '-'}
                         </div>
-                      )}
-                    </div>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-sm font-bold text-white">{flight.origin}</span>
+                          <svg className="w-4 h-4 text-amber-500/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                          <span className="text-sm font-bold text-white">{flight.destination}</span>
+                        </div>
+                        <div className="text-xs text-gray-400 shrink-0">
+                          {formatHHMM(flight.std)}{flight.std && flight.sta && ' - '}{formatHHMM(flight.sta)}
+                        </div>
+                        <span className="text-xs font-medium text-purple-400 shrink-0">
+                          {flight.block_hours != null ? formatDecimalHours(flight.block_hours) : '--:--'}
+                        </span>
+                        <svg className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+                    {isExpanded && (
+                      <FlightDetailEditor
+                        flight={flight}
+                        onSave={saveFlight}
+                        onClose={() => setExpandedFlightId(null)}
+                      />
+                    )}
                   </div>
                 )
               })}
@@ -378,83 +313,52 @@ export function BitacoraPage() {
                 {entry.flights && entry.flights.length > 0 && (
                   <div className="space-y-2">
                     {entry.flights.map((flight) => {
-                      const isEditing = editingFlight === flight.id
+                      const isExpanded = expandedFlightId === flight.id
 
                       return (
-                        <div key={flight.id} className="bg-white/5 rounded-lg p-3">
-                          <div className="flex items-center gap-3">
-                            <div className="text-xs font-mono font-bold text-amber-400 w-14 shrink-0">
-                              {flight.flight_number || '-'}
-                            </div>
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <span className="text-sm font-bold text-white">{flight.origin}</span>
-                              <svg className="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                              </svg>
-                              <span className="text-sm font-bold text-white">{flight.destination}</span>
-                            </div>
-                            {flight.aircraft_registration && (
-                              <span className="text-[10px] text-gray-500 font-mono shrink-0 hidden sm:block">
-                                {flight.aircraft_registration}
-                              </span>
-                            )}
-                            <div className="text-xs text-gray-500 shrink-0 hidden sm:block">
-                              {flight.std && formatHHMM(flight.std) !== '--:--' && <span>{formatHHMM(flight.std)}</span>}
-                              {flight.std && flight.sta && ' - '}
-                              {flight.sta && formatHHMM(flight.sta) !== '--:--' && <span>{formatHHMM(flight.sta)}</span>}
-                            </div>
-
-                            {/* Hours display / Edit trigger */}
-                            {!isEditing ? (
-                              <button
-                                onClick={() => startEditFlight(flight.id, flight.block_hours, flight.flight_hours)}
-                                className="text-xs font-medium text-purple-400 shrink-0 hover:text-purple-300 transition-colors px-2 py-1 rounded hover:bg-purple-500/10"
-                                title="Editar horas"
-                              >
-                                {flight.block_hours != null ? formatDecimalHours(flight.block_hours) : '--:--'}
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-1 shrink-0">
-                                <div className="flex flex-col gap-1">
-                                  <label className="text-[9px] text-gray-500">BLK</label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={editValues.block_hours}
-                                    onChange={(e) => setEditValues((v) => ({ ...v, block_hours: e.target.value }))}
-                                    className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
-                                    placeholder="0.00"
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-1">
-                                  <label className="text-[9px] text-gray-500">FLT</label>
-                                  <input
-                                    type="number"
-                                    step="0.01"
-                                    value={editValues.flight_hours}
-                                    onChange={(e) => setEditValues((v) => ({ ...v, flight_hours: e.target.value }))}
-                                    className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
-                                    placeholder="0.00"
-                                  />
-                                </div>
-                                <div className="flex flex-col gap-1 ml-1">
-                                  <button
-                                    onClick={handleSaveFlight}
-                                    disabled={saving}
-                                    className="px-2 py-1 text-[10px] font-medium bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 transition-colors"
-                                  >
-                                    {saving ? '...' : 'OK'}
-                                  </button>
-                                  <button
-                                    onClick={cancelEdit}
-                                    className="px-2 py-1 text-[10px] font-medium text-gray-400 rounded hover:bg-white/10 transition-colors"
-                                  >
-                                    X
-                                  </button>
-                                </div>
+                        <div key={flight.id}>
+                          <button
+                            onClick={() => toggleFlight(flight.id)}
+                            className={`w-full bg-white/5 rounded-lg p-3 text-left transition-all ${
+                              isExpanded ? 'ring-1 ring-amber-500/30' : 'hover:bg-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="text-xs font-mono font-bold text-amber-400 w-14 shrink-0">
+                                {flight.flight_number || '-'}
                               </div>
-                            )}
-                          </div>
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <span className="text-sm font-bold text-white">{flight.origin}</span>
+                                <svg className="w-4 h-4 text-gray-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                                <span className="text-sm font-bold text-white">{flight.destination}</span>
+                              </div>
+                              {flight.aircraft_registration && (
+                                <span className="text-[10px] text-gray-500 font-mono shrink-0 hidden sm:block">
+                                  {flight.aircraft_registration}
+                                </span>
+                              )}
+                              <div className="text-xs text-gray-500 shrink-0 hidden sm:block">
+                                {flight.std && formatHHMM(flight.std) !== '--:--' && <span>{formatHHMM(flight.std)}</span>}
+                                {flight.std && flight.sta && ' - '}
+                                {flight.sta && formatHHMM(flight.sta) !== '--:--' && <span>{formatHHMM(flight.sta)}</span>}
+                              </div>
+                              <span className="text-xs font-medium text-purple-400 shrink-0">
+                                {flight.block_hours != null ? formatDecimalHours(flight.block_hours) : '--:--'}
+                              </span>
+                              <svg className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </button>
+                          {isExpanded && (
+                            <FlightDetailEditor
+                              flight={flight}
+                              onSave={saveFlight}
+                              onClose={() => setExpandedFlightId(null)}
+                            />
+                          )}
                         </div>
                       )
                     })}

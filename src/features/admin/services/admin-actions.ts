@@ -233,3 +233,160 @@ export async function updateLastSeen(): Promise<void> {
     // Silent fail - not critical
   }
 }
+
+// ========== SUPPORT TICKET MANAGEMENT ==========
+
+interface AdminTicket {
+  id: string
+  user_id: string
+  subject: string
+  category: string
+  status: string
+  priority: string
+  satisfaction_rating: number | null
+  created_at: string
+  updated_at: string
+  resolved_at: string | null
+  user_name: string | null
+  user_email: string | null
+}
+
+interface AdminTicketMessage {
+  id: string
+  ticket_id: string
+  sender_type: string
+  content: string
+  created_at: string
+}
+
+export async function getAdminTickets(
+  statusFilter?: string
+): Promise<AdminTicket[]> {
+  const supabase = await requireAdmin()
+
+  let query = supabase
+    .from('support_tickets')
+    .select('*')
+    .order('updated_at', { ascending: false })
+    .limit(100)
+
+  if (statusFilter && statusFilter !== 'all') {
+    query = query.eq('status', statusFilter)
+  }
+
+  const { data: tickets, error } = await query
+
+  if (error) {
+    console.error('Error fetching admin tickets:', error)
+    return []
+  }
+
+  if (!tickets || tickets.length === 0) return []
+
+  // Fetch user info for all tickets
+  const userIds = [...new Set(tickets.map(t => t.user_id))]
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, full_name, email')
+    .in('id', userIds)
+
+  const profileMap = new Map(
+    (profiles ?? []).map(p => [p.id, p])
+  )
+
+  return tickets.map(t => ({
+    ...t,
+    user_name: profileMap.get(t.user_id)?.full_name ?? null,
+    user_email: profileMap.get(t.user_id)?.email ?? null,
+  })) as AdminTicket[]
+}
+
+export async function getAdminTicketMessages(
+  ticketId: string
+): Promise<AdminTicketMessage[]> {
+  const supabase = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from('support_messages')
+    .select('*')
+    .eq('ticket_id', ticketId)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching ticket messages:', error)
+    return []
+  }
+
+  return (data ?? []) as AdminTicketMessage[]
+}
+
+export async function addAdminMessage(
+  ticketId: string,
+  content: string
+): Promise<{ error?: string }> {
+  const supabase = await requireAdmin()
+
+  const { error } = await supabase
+    .from('support_messages')
+    .insert({
+      ticket_id: ticketId,
+      sender_type: 'admin',
+      content,
+    })
+
+  if (error) return { error: error.message }
+
+  // Update ticket timestamp
+  await supabase
+    .from('support_tickets')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', ticketId)
+
+  return {}
+}
+
+export async function updateTicketStatus(
+  ticketId: string,
+  status: string
+): Promise<{ error?: string }> {
+  const supabase = await requireAdmin()
+
+  const validStatuses = ['open', 'in_progress', 'resolved', 'escalated', 'closed']
+  if (!validStatuses.includes(status)) {
+    return { error: 'Status invalido' }
+  }
+
+  const updates: Record<string, unknown> = {
+    status,
+    updated_at: new Date().toISOString(),
+  }
+
+  if (status === 'resolved' || status === 'closed') {
+    updates.resolved_at = new Date().toISOString()
+  }
+
+  const { error } = await supabase
+    .from('support_tickets')
+    .update(updates)
+    .eq('id', ticketId)
+
+  if (error) return { error: error.message }
+  return {}
+}
+
+export async function getTicketStats(): Promise<{ status: string; count: number }[]> {
+  const supabase = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .select('status')
+
+  if (error || !data) return []
+
+  const counts: Record<string, number> = {}
+  data.forEach(t => {
+    counts[t.status] = (counts[t.status] || 0) + 1
+  })
+
+  return Object.entries(counts).map(([status, count]) => ({ status, count }))
+}

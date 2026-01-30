@@ -79,13 +79,49 @@ export type StudyAction =
   | { type: 'COMPLETE_PLAN' }
   | { type: 'ARCHIVE_PLAN' }
 
-export const PLAN_TYPE_OPTIONS = [
-  { value: 'simulator_prep', label: 'Preparacion Simulador' },
-  { value: 'line_check', label: 'Line Check' },
-  { value: 'proficiency_check', label: 'Proficiency Check' },
-  { value: 'type_rating', label: 'Type Rating' },
-  { value: 'recurrent', label: 'Recurrente' },
-] as const
+export const PLAN_TYPE_OPTIONS: readonly {
+  value: string
+  label: string
+  icon: string
+  description: string
+  recommendedCategories: readonly string[]
+}[] = [
+  {
+    value: 'simulator_prep',
+    label: 'Preparacion Simulador',
+    icon: 'sim',
+    description: 'Procedimientos normales, anormales y de emergencia. Factor humano integral, rutas de falla y decision making.',
+    recommendedCategories: ['procedures', 'emergency', 'systems', 'human_factors'],
+  },
+  {
+    value: 'line_check',
+    label: 'Line Check',
+    icon: 'line',
+    description: 'Teoria operativa, procedimientos normales, memory items y regulaciones de linea.',
+    recommendedCategories: ['procedures', 'regulations', 'systems', 'performance', 'navigation'],
+  },
+  {
+    value: 'proficiency_check',
+    label: 'Proficiency Check',
+    icon: 'prof',
+    description: 'Evaluacion completa de conocimientos tecnicos y operativos.',
+    recommendedCategories: ['systems', 'procedures', 'emergency', 'performance', 'aerodynamics'],
+  },
+  {
+    value: 'type_rating',
+    label: 'Type Rating',
+    icon: 'type',
+    description: 'Conocimiento profundo de sistemas de aeronave, limitaciones y performance.',
+    recommendedCategories: ['systems', 'performance', 'procedures', 'navigation', 'aerodynamics'],
+  },
+  {
+    value: 'recurrent',
+    label: 'Recurrente',
+    icon: 'recur',
+    description: 'Repaso general de todas las areas para mantenerte actualizado.',
+    recommendedCategories: ['systems', 'procedures', 'emergency', 'regulations', 'meteorology'],
+  },
+]
 
 export const STUDY_CATEGORIES = [
   { value: 'systems', label: 'Sistemas', color: 'text-blue-400', bg: 'bg-blue-400/10' },

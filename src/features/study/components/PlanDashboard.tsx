@@ -146,6 +146,7 @@ export function PlanDashboard({
               <TopicCard
                 key={topic.id}
                 topic={topic}
+                planType={plan.plan_type}
                 onRecordSession={onRecordSession}
               />
             ))}

@@ -17,6 +17,7 @@ const navItems: NavItem[] = [
   { label: 'Quiz Arena', icon: '◆', href: '/quiz' },
   { label: 'Bienestar', icon: '♡', href: '/bienestar' },
   { label: 'Salon de Estudio', icon: '▣', href: '/study' },
+  { label: 'Soporte', icon: '?', href: '/support' },
   { label: 'Dashboard', icon: '◻', href: '/dashboard', adminOnly: true },
   { label: 'Admin', icon: '⚡', href: '/admin', adminOnly: true },
   { label: 'Beta', icon: '★', href: '/beta', adminOnly: true },

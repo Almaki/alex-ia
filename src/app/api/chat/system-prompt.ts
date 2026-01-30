@@ -1,6 +1,6 @@
 import type { Profile } from '@/types/database'
 
-export function buildSystemPrompt(profile: Profile | null, ragContext: string, responseMode: 'concise' | 'detailed' = 'detailed'): string {
+export function buildSystemPrompt(profile: Profile | null, ragContext: string, responseMode: 'concise' | 'detailed' | 'procedure' = 'detailed'): string {
   const userName = profile?.full_name || 'piloto'
   const userFleet = profile?.fleet || 'general'
   const userPosition = profile?.position || 'piloto'
@@ -287,8 +287,22 @@ ${responseMode === 'concise' ? `Responde de forma DIRECTA y CONCISA:
 - NO incluyas secciones de detalle, listas extensas, ni explicaciones largas
 - NO uses el delimitador ---DETALLE---
 - Si es un procedimiento, da solo los pasos esenciales (maximo 5 pasos cortos)
-- Sé preciso y al grano, como un briefing rapido
-- Usa viñetas solo si es estrictamente necesario` : `SIEMPRE estructura tus respuestas con este formato exacto:
+- Se preciso y al grano, como un briefing rapido
+- Usa vinetas solo si es estrictamente necesario`
+: responseMode === 'procedure' ? `Responde como un PROCEDIMIENTO OPERACIONAL paso a paso (formato SOP/QRH):
+- Estructura TODA la respuesta como un procedimiento operacional claro y secuencial
+- Usa numeracion: 1. 2. 3. para cada paso de accion
+- Cada paso debe ser una accion concreta y ejecutable, como un checklist de vuelo
+- Usa formato: ACCION en mayuscula seguida de descripcion. Ej: "VERIFICAR: Hydraulic pressure en rango verde"
+- Para condiciones usa: "SI [condicion] -> [accion]"
+- Marca puntos criticos con: "PRECAUCION:" o "NOTA:"
+- Incluye memory items si aplican, claramente marcados
+- NO uses el delimitador ---DETALLE---
+- NO incluyas explicaciones teoricas extensas - solo el procedimiento
+- Al final incluye un resumen de puntos clave si el procedimiento tiene mas de 5 pasos
+- Usa terminologia estandar de aviacion (ft, kts, nm, hPa)
+- Formato tipo SOP/QRH: claro, directo, sin ambiguedades`
+: `SIEMPRE estructura tus respuestas con este formato exacto:
 
 [Respuesta concisa: 2-4 oraciones directas que responden la pregunta]
 

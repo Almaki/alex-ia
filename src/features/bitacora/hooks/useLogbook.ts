@@ -141,7 +141,7 @@ export function useLogbook() {
 
   const saveFlight = useCallback(async (
     flightId: string,
-    updates: Partial<Pick<LogbookFlight, 'block_hours' | 'flight_hours' | 'aircraft_registration' | 'remarks'>>
+    updates: Partial<Pick<LogbookFlight, 'block_hours' | 'flight_hours' | 'aircraft_type' | 'aircraft_registration' | 'is_pf' | 'is_night' | 'is_cat_ii_iii' | 'approach_type' | 'remarks'>>
   ) => {
     const { error: err } = await updateLogbookFlight(flightId, updates)
     if (err) {

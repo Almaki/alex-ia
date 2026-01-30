@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const { message, conversationId, responseMode } = body as {
       message: string
       conversationId: string | null
-      responseMode?: 'concise' | 'detailed'
+      responseMode?: 'concise' | 'detailed' | 'procedure'
     }
 
     if (!message?.trim()) {
@@ -41,19 +41,22 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    // 5. Execute RAG pipeline
+    // 5. Execute RAG pipeline (admin-only: prevents manual content leaks to regular users)
+    const isAdmin = (profile as Record<string, unknown> | null)?.is_admin === true
     let ragContext = ''
     let ragSources: { chunk_id: string; manual_type: string; aircraft_type: string | null; section: string | null; page_number: number | null; similarity: number }[] = []
 
-    try {
-      const ragResult = await executeRagPipeline(message, {
-        aircraftType: profile?.fleet ?? undefined,
-      })
-      ragContext = ragResult.formattedContext
-      ragSources = ragResult.sources
-    } catch (err) {
-      // RAG failure is non-fatal — continue without context
-      console.warn('RAG pipeline failed, continuing without context', err)
+    if (isAdmin) {
+      try {
+        const ragResult = await executeRagPipeline(message, {
+          aircraftType: profile?.fleet ?? undefined,
+        })
+        ragContext = ragResult.formattedContext
+        ragSources = ragResult.sources
+      } catch (err) {
+        // RAG failure is non-fatal — continue without context
+        console.warn('RAG pipeline failed, continuing without context', err)
+      }
     }
 
     // 6. Get or create conversation

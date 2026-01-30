@@ -42,6 +42,7 @@ export interface QuizState {
   timeRemaining: number
   streak: number
   error: string | null
+  answers: number[]
 }
 
 export type QuizAction =

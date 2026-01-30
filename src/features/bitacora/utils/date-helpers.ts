@@ -182,3 +182,24 @@ export function calculateTotalBlockHours(flights: Array<{ block_hours: number | 
 export function calculateTotalFlightHours(flights: Array<{ flight_hours: number | null }>): number {
   return flights.reduce((total, flight) => total + (flight.flight_hours || 0), 0)
 }
+
+/**
+ * Strip seconds from time strings: "HH:MM:SS" -> "HH:MM", "HH:MM" -> "HH:MM"
+ */
+export function formatHHMM(time: string | null): string {
+  if (!time) return '--:--'
+  const parts = time.split(':')
+  if (parts.length < 2) return time
+  const h = parts[0].padStart(2, '0')
+  const m = String(Math.min(59, parseInt(parts[1], 10) || 0)).padStart(2, '0')
+  return `${h}:${m}`
+}
+
+/**
+ * Format decimal hours to H:MM display (no zero-pad on hours)
+ */
+export function formatDecimalHours(hours: number): string {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  return `${h}:${String(Math.min(59, m)).padStart(2, '0')}`
+}

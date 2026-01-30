@@ -26,6 +26,14 @@ const DIFFICULTY_LABELS: Record<number, string> = {
   3: 'Avanzado',
 }
 
+const PLAN_TYPE_PROMPTS: Record<string, string> = {
+  simulator_prep: 'Enfocate en procedimientos normales, anormales y de emergencia. Incluye rutas de decision ante fallas de sistemas, consejos de CRM y factor humano. Menciona memory items relevantes.',
+  line_check: 'Enfocate en teoria operativa, procedimientos normales, memory items y regulaciones. Incluye aspectos de performance y navegacion que se evaluan en un line check.',
+  proficiency_check: 'Cubre todos los aspectos tecnicos y operativos de forma integral. Incluye limitaciones, procedimientos y conceptos fundamentales.',
+  type_rating: 'Enfocate en conocimiento profundo de sistemas de aeronave, limitaciones, performance y procedimientos especificos del tipo.',
+  recurrent: 'Haz un repaso general cubriendo las areas mas importantes. Incluye actualizaciones recientes y puntos clave de seguridad.',
+}
+
 export function ChatInterface() {
   const { messages, status, conversationId, error, responseMode, sendMessage, stopStreaming, loadConversation, newChat, setResponseMode } = useChat()
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -44,16 +52,16 @@ export function ChatInterface() {
     if (!raw) return
 
     try {
-      const topic = JSON.parse(raw) as { topicId: string; category: string; difficulty: number }
+      const topic = JSON.parse(raw) as { topicId: string; category: string; difficulty: number; planType?: string }
       sessionStorage.removeItem('study_topic')
       studyAutoSentRef.current = true
 
       const categoryLabel = STUDY_CATEGORY_LABELS[topic.category] || topic.category
       const difficultyLabel = DIFFICULTY_LABELS[topic.difficulty] || 'Intermedio'
+      const planContext = topic.planType ? PLAN_TYPE_PROMPTS[topic.planType] || '' : ''
 
-      const prompt = `Estoy estudiando "${categoryLabel}" a nivel ${difficultyLabel} como parte de mi plan de estudio. Explicame los conceptos clave y puntos importantes que debo dominar sobre este tema para mi operacion como piloto.`
+      const prompt = `Estoy estudiando "${categoryLabel}" a nivel ${difficultyLabel} como parte de mi plan de estudio. Explicame los conceptos clave y puntos importantes que debo dominar sobre este tema para mi operacion como piloto.${planContext ? ` ${planContext}` : ''}`
 
-      // Small delay to ensure chat is ready
       setTimeout(() => sendMessage(prompt), 300)
     } catch {
       // ignore malformed data
@@ -88,23 +96,26 @@ export function ChatInterface() {
             <p className="text-xs text-gray-500">Tu copiloto digital de aviacion</p>
           </div>
 
-          {/* Response Mode Toggle */}
-          <div className="flex items-center gap-1.5 ml-auto">
-            <button
-              type="button"
-              onClick={() => setResponseMode(responseMode === 'concise' ? 'detailed' : 'concise')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-                responseMode === 'detailed' ? 'bg-purple-600' : 'bg-gray-600'
-              }`}
-              aria-label="Toggle response mode"
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                responseMode === 'detailed' ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-            <span className="text-xs text-gray-400 whitespace-nowrap">
-              {responseMode === 'concise' ? 'Directa' : 'Detallada'}
-            </span>
+          {/* Response Mode Selector */}
+          <div className="flex items-center gap-0.5 ml-auto bg-gray-800/60 rounded-lg p-0.5 border border-white/10">
+            {([
+              { mode: 'concise' as const, label: 'Directa' },
+              { mode: 'detailed' as const, label: 'Detallada' },
+              { mode: 'procedure' as const, label: 'SOP' },
+            ]).map(({ mode, label }) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setResponseMode(mode)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                  responseMode === mode
+                    ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/20'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 

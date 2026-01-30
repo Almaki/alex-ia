@@ -1,7 +1,7 @@
 'use client'
 
 import { useReducer, useRef, useCallback } from 'react'
-import type { ChatState, ChatAction, ChatMessage } from '../types'
+import type { ChatState, ChatAction, ChatMessage, ResponseMode } from '../types'
 import type { SourceCitation } from '@/types/database'
 
 const initialState: ChatState = {
@@ -172,7 +172,7 @@ export function useChat() {
     dispatch({ type: 'RESET' })
   }, [])
 
-  const setResponseMode = useCallback((mode: 'concise' | 'detailed') => {
+  const setResponseMode = useCallback((mode: ResponseMode) => {
     dispatch({ type: 'SET_RESPONSE_MODE', mode })
   }, [])
 

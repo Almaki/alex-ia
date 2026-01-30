@@ -7,6 +7,7 @@ import { DIFFICULTY_OPTIONS } from '@/features/quiz/types'
 
 interface TopicCardProps {
   topic: StudyTopicWithSessions
+  planType?: string
   onRecordSession: (topicId: string, activityType: string) => void
 }
 
@@ -17,7 +18,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   manual: 'Manual',
 }
 
-export function TopicCard({ topic, onRecordSession }: TopicCardProps) {
+export function TopicCard({ topic, planType, onRecordSession }: TopicCardProps) {
   const router = useRouter()
   const category = STUDY_CATEGORIES.find((cat) => cat.value === topic.category)
   const difficulty = DIFFICULTY_OPTIONS.find((diff) => diff.value === topic.target_difficulty)
@@ -38,6 +39,7 @@ export function TopicCard({ topic, onRecordSession }: TopicCardProps) {
         topicId: topic.id,
         category: topic.category,
         difficulty: topic.target_difficulty,
+        planType: planType || null,
       })
     )
     router.push('/quiz')
@@ -50,6 +52,7 @@ export function TopicCard({ topic, onRecordSession }: TopicCardProps) {
         topicId: topic.id,
         category: topic.category,
         difficulty: topic.target_difficulty,
+        planType: planType || null,
       })
     )
     router.push('/chat')

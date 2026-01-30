@@ -160,6 +160,7 @@ export function QuizArena() {
           session={state.session}
           stats={state.stats}
           questions={state.questions}
+          answers={state.answers}
           onPlayAgain={handlePlayAgain}
         />
       )}

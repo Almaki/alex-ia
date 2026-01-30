@@ -17,7 +17,7 @@ export interface ChatConversation {
 
 export type ChatStatus = 'idle' | 'sending' | 'streaming' | 'error'
 
-export type ResponseMode = 'concise' | 'detailed'
+export type ResponseMode = 'concise' | 'detailed' | 'procedure'
 
 export interface ChatState {
   messages: ChatMessage[]

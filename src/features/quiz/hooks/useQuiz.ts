@@ -25,6 +25,7 @@ const initialState: QuizState = {
   timeRemaining: QUESTION_TIME_LIMIT,
   streak: 0,
   error: null,
+  answers: [],
 }
 
 function quizReducer(state: QuizState, action: QuizAction): QuizState {
@@ -43,11 +44,12 @@ function quizReducer(state: QuizState, action: QuizAction): QuizState {
         streak: 0,
         timeRemaining: QUESTION_TIME_LIMIT,
         error: null,
+        answers: [],
       }
 
     case 'SELECT_ANSWER':
       if (state.selectedIndex !== null) return state
-      return { ...state, selectedIndex: action.index }
+      return { ...state, selectedIndex: action.index, answers: [...state.answers, action.index] }
 
     case 'SHOW_FEEDBACK': {
       if (!state.stats) return state
