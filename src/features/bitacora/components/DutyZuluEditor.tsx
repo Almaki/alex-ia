@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { formatHHMM, getAirportUtcOffset, localToZulu } from '../utils/date-helpers'
+import { formatHHMM, getAirportUtcOffset, localToZulu, DEFAULT_MEXICO_UTC_OFFSET } from '../utils/date-helpers'
 
 interface DutyZuluEditorProps {
   entryId: string
@@ -27,14 +27,14 @@ export function DutyZuluEditor({
   onSave,
 }: DutyZuluEditorProps) {
   // Auto-compute Zulu from local times + each airport's UTC offset
-  // C/I local → Zulu using ORIGIN offset
-  // C/O local → Zulu using DESTINATION offset
+  // C/I local → Zulu using ORIGIN offset (fallback to Mexico Centro UTC-6)
+  // C/O local → Zulu using DESTINATION offset (fallback to origin or default)
   const autoZulu = useMemo(() => {
-    const originOffset = originIATA ? getAirportUtcOffset(originIATA) : null
+    const originOffset = originIATA ? getAirportUtcOffset(originIATA) : DEFAULT_MEXICO_UTC_OFFSET
     const destOffset = destinationIATA ? getAirportUtcOffset(destinationIATA) : originOffset
     return {
-      start: originOffset != null ? localToZulu(checkIn, originOffset) : null,
-      end: destOffset != null ? localToZulu(checkOut, destOffset) : null,
+      start: localToZulu(checkIn, originOffset),
+      end: localToZulu(checkOut, destOffset),
     }
   }, [checkIn, checkOut, originIATA, destinationIATA])
 

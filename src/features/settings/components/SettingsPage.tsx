@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { getProfile, updateProfile, deleteAccount } from '@/features/settings/services/settings-actions'
 import { FLEET_OPTIONS, POSITION_OPTIONS } from '@/types/database'
+import { createClient } from '@/lib/supabase/client'
 
 interface ProfileData {
   id: string
@@ -24,6 +25,9 @@ export function SettingsPage() {
   const [fullName, setFullName] = useState('')
   const [fleet, setFleet] = useState<string | null>(null)
   const [position, setPosition] = useState<string | null>(null)
+
+  // Logout state
+  const [loggingOut, setLoggingOut] = useState(false)
 
   // Delete account modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -79,6 +83,14 @@ export function SettingsPage() {
     }
 
     setSaving(false)
+  }
+
+  // Handle logout
+  async function handleLogout() {
+    setLoggingOut(true)
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    window.location.href = '/login'
   }
 
   // Handle account deletion
@@ -231,6 +243,20 @@ export function SettingsPage() {
             className="w-full rounded-lg bg-purple-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
+        </div>
+
+        {/* Logout */}
+        <div className="rounded-2xl bg-gray-900 p-6">
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {loggingOut ? 'Cerrando sesion...' : 'Cerrar Sesion'}
           </button>
         </div>
 

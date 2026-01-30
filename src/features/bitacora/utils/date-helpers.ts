@@ -239,7 +239,8 @@ const AIRPORT_UTC_OFFSETS: Record<string, number> = {
   TIJ: 8, MXL: 8,
   // UTC-6 is default for everything else (Centro)
 }
-const DEFAULT_UTC_OFFSET = 6
+export const DEFAULT_MEXICO_UTC_OFFSET = 6
+const DEFAULT_UTC_OFFSET = DEFAULT_MEXICO_UTC_OFFSET
 
 /**
  * Get UTC offset (hours to add) for an IATA airport code.

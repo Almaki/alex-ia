@@ -86,18 +86,40 @@ export function ChatInterface() {
 
       {/* Main chat area */}
       <div className="flex flex-1 flex-col">
-        {/* Header */}
-        <div className="flex items-center gap-3 border-b border-white/10 bg-gray-950/80 backdrop-blur-sm px-3 py-2.5 md:px-4 md:py-3">
-          <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-xs md:text-sm font-bold text-white">
+        {/* Header - desktop only (mobile uses sidebar header) */}
+        <div className="hidden md:flex items-center gap-3 border-b border-white/10 bg-gray-950/80 backdrop-blur-sm px-4 py-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-sm font-bold text-white">
             A
           </div>
           <div>
-            <h2 className="text-xs md:text-sm font-semibold text-white">AlexIA</h2>
+            <h2 className="text-sm font-semibold text-white">AlexIA</h2>
             <p className="text-xs text-gray-500">Tu copiloto digital de aviacion</p>
           </div>
-
-          {/* Response Mode Selector */}
           <div className="flex items-center gap-0.5 ml-auto bg-gray-800/60 rounded-lg p-0.5 border border-white/10">
+            {([
+              { mode: 'concise' as const, label: 'Directa' },
+              { mode: 'detailed' as const, label: 'Detallada' },
+              { mode: 'procedure' as const, label: 'SOP' },
+            ]).map(({ mode, label }) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setResponseMode(mode)}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                  responseMode === mode
+                    ? 'bg-purple-600 text-white shadow-sm shadow-purple-500/20'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile-only mode selector */}
+        <div className="flex md:hidden items-center justify-center py-2">
+          <div className="flex items-center gap-0.5 bg-gray-800/60 rounded-lg p-0.5 border border-white/10">
             {([
               { mode: 'concise' as const, label: 'Directa' },
               { mode: 'detailed' as const, label: 'Detallada' },

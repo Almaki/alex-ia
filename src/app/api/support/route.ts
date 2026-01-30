@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     // 4. Fetch message history from support_messages (last 20 messages)
     const { data: history } = await supabase
       .from('support_messages')
-      .select('sender_type, message')
+      .select('sender_type, content')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true })
       .limit(20)
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // 5. Build chat history - map sender_type to Gemini roles
     const rawHistory = (history ?? []).map((m) => ({
       role: (m.sender_type === 'user' ? 'user' : 'model') as 'user' | 'model',
-      parts: [{ text: m.message }],
+      parts: [{ text: m.content }],
     }))
 
     // 6. Validate and fix alternating roles
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           await supabase.from('support_messages').insert({
             ticket_id: ticketId,
             sender_type: 'agent',
-            message: fullResponse,
+            content: fullResponse,
           })
 
           // 10. Update ticket status if currently 'open'
