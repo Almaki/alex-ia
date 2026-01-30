@@ -47,24 +47,24 @@ export function StudyProgress({ plan }: StudyProgressProps) {
   }).filter((stat) => stat.total > 0) // Only show categories with topics
 
   return (
-    <div className="bg-gray-900/60 border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
-      <h3 className="text-xl font-bold text-white mb-6">Progreso General</h3>
+    <div className="bg-gray-900/60 border border-white/5 rounded-2xl p-4 md:p-6 backdrop-blur-sm">
+      <h3 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">Progreso General</h3>
 
       {/* Circular Progress */}
-      <div className="flex justify-center mb-8">
+      <div className="flex justify-center mb-6 md:mb-8">
         <div className="relative">
-          <svg className="w-40 h-40 transform -rotate-90">
+          <svg className="w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 transform -rotate-90">
             <circle
-              cx="80"
-              cy="80"
+              cx="50%"
+              cy="50%"
               r={radius}
               className="stroke-white/10"
               strokeWidth="10"
               fill="none"
             />
             <circle
-              cx="80"
-              cy="80"
+              cx="50%"
+              cy="50%"
               r={radius}
               className="stroke-amber-500"
               strokeWidth="10"
@@ -78,7 +78,7 @@ export function StudyProgress({ plan }: StudyProgressProps) {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-4xl font-bold text-amber-500">
+            <div className="text-3xl sm:text-4xl font-bold text-amber-500">
               {completionPercentage}%
             </div>
             <div className="text-xs text-gray-400 mt-1">Completo</div>
@@ -87,30 +87,30 @@ export function StudyProgress({ plan }: StudyProgressProps) {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
-          <div className="text-2xl font-bold text-white mb-1">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 mb-4 md:mb-6">
+        <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-xl text-center">
+          <div className="text-xl md:text-2xl font-bold text-white mb-1">
             {completedTopics}/{totalTopics}
           </div>
-          <div className="text-sm text-gray-400">Topics</div>
+          <div className="text-xs md:text-sm text-gray-400">Topics</div>
         </div>
-        <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
-          <div className="text-2xl font-bold text-white mb-1">
+        <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-xl text-center">
+          <div className="text-xl md:text-2xl font-bold text-white mb-1">
             {totalSessions}
           </div>
-          <div className="text-sm text-gray-400">Sesiones</div>
+          <div className="text-xs md:text-sm text-gray-400">Sesiones</div>
         </div>
-        <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
-          <div className={`text-2xl font-bold mb-1 ${daysRemaining < 0 ? 'text-red-400' : 'text-white'}`}>
+        <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-xl text-center">
+          <div className={`text-xl md:text-2xl font-bold mb-1 ${daysRemaining < 0 ? 'text-red-400' : 'text-white'}`}>
             {daysRemaining}
           </div>
-          <div className="text-sm text-gray-400">Dias restantes</div>
+          <div className="text-xs md:text-sm text-gray-400">Dias restantes</div>
         </div>
-        <div className="p-4 bg-white/5 border border-white/10 rounded-xl text-center">
-          <div className="text-2xl font-bold text-white mb-1">
+        <div className="p-3 md:p-4 bg-white/5 border border-white/10 rounded-xl text-center">
+          <div className="text-xl md:text-2xl font-bold text-white mb-1">
             {currentWeek}
           </div>
-          <div className="text-sm text-gray-400">Semana actual</div>
+          <div className="text-xs md:text-sm text-gray-400">Semana actual</div>
         </div>
       </div>
 

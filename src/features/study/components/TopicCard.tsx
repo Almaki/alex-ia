@@ -25,21 +25,21 @@ export function TopicCard({ topic, onMarkComplete, onStartProgress }: TopicCardP
   const progressBarWidth = `${topic.progress}%`
 
   return (
-    <div className="bg-gray-900/60 border border-white/5 rounded-2xl p-4 hover:border-amber-500/20 transition-all backdrop-blur-sm">
+    <div className="bg-gray-900/60 border border-white/5 rounded-2xl p-3 md:p-4 hover:border-amber-500/20 transition-all backdrop-blur-sm">
       {/* Header with Category and Week */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-start justify-between mb-3 gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
           {category && (
-            <span className={`px-2 py-1 rounded-lg text-xs font-medium ${category.color} ${category.bg}`}>
+            <span className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg text-xs font-medium ${category.color} ${category.bg}`}>
               {category.label}
             </span>
           )}
-          <span className="px-2 py-1 rounded-lg text-xs font-medium text-gray-400 bg-gray-800/50">
+          <span className="px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg text-xs font-medium text-gray-400 bg-gray-800/50">
             Semana {topic.week_number}
           </span>
         </div>
         {difficulty && (
-          <span className={`px-2 py-1 rounded-lg text-xs font-medium ${difficultyColorMap[difficulty.color]}`}>
+          <span className={`px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg text-xs font-medium ${difficultyColorMap[difficulty.color]} flex-shrink-0`}>
             {difficulty.label}
           </span>
         )}
@@ -67,7 +67,7 @@ export function TopicCard({ topic, onMarkComplete, onStartProgress }: TopicCardP
       </div>
 
       {/* Session Count */}
-      <div className="mb-4 text-sm text-gray-400">
+      <div className="mb-3 md:mb-4 text-xs md:text-sm text-gray-400">
         <span>{topic.sessions.length} sesiones</span>
       </div>
 
@@ -75,27 +75,27 @@ export function TopicCard({ topic, onMarkComplete, onStartProgress }: TopicCardP
       <div className="flex gap-2">
         <Link
           href="/quiz"
-          className="flex-1 px-3 py-2 text-center text-sm font-medium text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 transition-all"
+          className="flex-1 min-h-[44px] px-2 md:px-3 py-2.5 md:py-2 text-center text-xs md:text-sm font-medium text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 active:scale-95 transition-all flex items-center justify-center"
         >
           Quiz
         </Link>
         <Link
           href="/chat"
-          className="flex-1 px-3 py-2 text-center text-sm font-medium text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 transition-all"
+          className="flex-1 min-h-[44px] px-2 md:px-3 py-2.5 md:py-2 text-center text-xs md:text-sm font-medium text-amber-400 border border-amber-500/30 rounded-lg hover:bg-amber-500/10 active:scale-95 transition-all flex items-center justify-center"
         >
           Chat
         </Link>
         {topic.status === 'pending' ? (
           <button
             onClick={() => onStartProgress(topic.id)}
-            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all"
+            className="flex-1 min-h-[44px] px-2 md:px-3 py-2.5 md:py-2 text-xs md:text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg hover:from-amber-600 hover:to-yellow-600 active:scale-95 transition-all"
           >
             Iniciar
           </button>
         ) : topic.status !== 'completed' && (
           <button
             onClick={() => onMarkComplete(topic.id)}
-            className="flex-1 px-3 py-2 text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all"
+            className="flex-1 min-h-[44px] px-2 md:px-3 py-2.5 md:py-2 text-xs md:text-sm font-medium text-white bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg hover:from-amber-600 hover:to-yellow-600 active:scale-95 transition-all"
           >
             Completar
           </button>

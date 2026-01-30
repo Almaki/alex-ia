@@ -8,6 +8,7 @@ const initialState: WellnessState = {
   status: 'idle',
   conversationId: null,
   error: null,
+  responseMode: 'detailed',
 }
 
 function wellnessChatReducer(state: WellnessState, action: WellnessAction): WellnessState {
@@ -52,6 +53,9 @@ function wellnessChatReducer(state: WellnessState, action: WellnessAction): Well
     case 'LOAD_MESSAGES':
       return { ...state, messages: action.messages, conversationId: action.conversationId }
 
+    case 'SET_RESPONSE_MODE':
+      return { ...state, responseMode: action.mode }
+
     case 'RESET':
       return initialState
 
@@ -91,6 +95,7 @@ export function useWellnessChat() {
         body: JSON.stringify({
           message: content.trim(),
           conversationId: state.conversationId,
+          responseMode: state.responseMode,
         }),
         signal: controller.signal,
       })
@@ -147,7 +152,7 @@ export function useWellnessChat() {
       dispatch({ type: 'SET_ERROR', error: 'Error de conexion con el servidor' })
       dispatch({ type: 'FINISH_STREAMING' })
     }
-  }, [state.conversationId, state.status])
+  }, [state.conversationId, state.status, state.responseMode])
 
   const stopStreaming = useCallback(() => {
     abortRef.current?.abort()
@@ -163,14 +168,20 @@ export function useWellnessChat() {
     dispatch({ type: 'RESET' })
   }, [])
 
+  const setResponseMode = useCallback((mode: 'concise' | 'detailed') => {
+    dispatch({ type: 'SET_RESPONSE_MODE', mode })
+  }, [])
+
   return {
     messages: state.messages,
     status: state.status,
     conversationId: state.conversationId,
     error: state.error,
+    responseMode: state.responseMode,
     sendMessage,
     stopStreaming,
     loadConversation,
     newChat,
+    setResponseMode,
   }
 }

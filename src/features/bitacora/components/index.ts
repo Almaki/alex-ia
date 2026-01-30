@@ -1,0 +1,1 @@
+export { BitacoraPage } from './BitacoraPage'

@@ -1,4 +1,5 @@
 import { Sidebar } from '@/features/dashboard/components/sidebar'
+import { LastSeenTracker } from '@/features/admin/components'
 
 export default function MainLayout({
   children,
@@ -7,6 +8,8 @@ export default function MainLayout({
 }) {
   return (
     <div className="relative flex min-h-screen bg-gray-950 overflow-hidden">
+      <LastSeenTracker />
+
       {/* Global Gradient Mesh Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-purple-600 rounded-full animate-blob blur-[150px] opacity-[0.07]" />
@@ -18,12 +21,10 @@ export default function MainLayout({
       <div className="fixed inset-0 z-0 pointer-events-none bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:64px_64px]" />
 
       {/* Sidebar */}
-      <div className="relative z-10">
-        <Sidebar />
-      </div>
+      <Sidebar />
 
-      {/* Main Content */}
-      <main className="relative z-10 flex-1 p-8 dark-scrollbar overflow-y-auto">
+      {/* Main Content - pt-16 on mobile for fixed header bar */}
+      <main className="relative z-10 flex-1 pt-16 px-4 pb-4 md:pt-0 md:p-8 dark-scrollbar overflow-y-auto min-h-screen">
         {children}
       </main>
     </div>

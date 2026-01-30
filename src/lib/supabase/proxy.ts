@@ -34,7 +34,7 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/chat') || pathname.startsWith('/admin') || pathname.startsWith('/quiz') || pathname.startsWith('/bienestar') || pathname.startsWith('/study')
+  const isProtectedRoute = pathname.startsWith('/dashboard') || pathname.startsWith('/chat') || pathname.startsWith('/admin') || pathname.startsWith('/quiz') || pathname.startsWith('/bienestar') || pathname.startsWith('/study') || pathname.startsWith('/settings') || pathname.startsWith('/beta')
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup')
   const isOnboardingRoute = pathname.startsWith('/onboarding')
 
@@ -54,7 +54,7 @@ export async function updateSession(request: NextRequest) {
     if (!profile?.onboarding_completed) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/chat', request.url))
   }
 
   // Logged in on protected route → check onboarding first
@@ -79,7 +79,7 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     if (profile?.onboarding_completed) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      return NextResponse.redirect(new URL('/chat', request.url))
     }
   }
 

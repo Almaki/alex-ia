@@ -53,6 +53,7 @@ export interface CreatePlanForm {
   aircraftType: string | null
   planType: string
   selectedCategories: string[]
+  selectedSubsystems: string[]
 }
 
 export type StudyPhase = 'loading' | 'no_plan' | 'creating' | 'dashboard'
@@ -96,6 +97,25 @@ export const STUDY_CATEGORIES = [
   { value: 'navigation', label: 'Navegacion', color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
   { value: 'human_factors', label: 'Factores Humanos', color: 'text-pink-400', bg: 'bg-pink-400/10' },
   { value: 'emergency', label: 'Emergencias', color: 'text-red-400', bg: 'bg-red-400/10' },
+] as const
+
+export const SYSTEM_SUBCATEGORIES = [
+  { value: 'hydraulic', label: 'Hidraulico' },
+  { value: 'pneumatic', label: 'Neumatico' },
+  { value: 'electrical', label: 'Electrico' },
+  { value: 'fuel', label: 'Combustible' },
+  { value: 'flight_controls', label: 'Controles de Vuelo' },
+  { value: 'landing_gear', label: 'Tren de Aterrizaje' },
+  { value: 'air_conditioning', label: 'Aire Acondicionado' },
+  { value: 'pressurization', label: 'Presurización' },
+  { value: 'fire_protection', label: 'Proteccion Contra Fuego' },
+  { value: 'ice_rain', label: 'Anti-hielo' },
+  { value: 'apu', label: 'APU' },
+  { value: 'engines', label: 'Motores' },
+  { value: 'navigation', label: 'Sistemas de Navegacion' },
+  { value: 'communication', label: 'Comunicaciones' },
+  { value: 'oxygen', label: 'Oxigeno' },
+  { value: 'lighting', label: 'Iluminacion' },
 ] as const
 
 export const TOPIC_STATUS_LABELS = {

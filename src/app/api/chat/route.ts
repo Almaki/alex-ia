@@ -17,9 +17,10 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse body
     const body = await request.json()
-    const { message, conversationId } = body as {
+    const { message, conversationId, responseMode } = body as {
       message: string
       conversationId: string | null
+      responseMode?: 'concise' | 'detailed'
     }
 
     if (!message?.trim()) {
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
     const genAI = new GoogleGenerativeAI(apiKey)
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
-      systemInstruction: buildSystemPrompt(profile, ragContext),
+      systemInstruction: buildSystemPrompt(profile, ragContext, responseMode || 'detailed'),
     })
 
     const chat = model.startChat({

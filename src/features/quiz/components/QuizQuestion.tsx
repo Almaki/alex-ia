@@ -37,37 +37,37 @@ export function QuizQuestion({
   const progress = (timeRemaining / 30) * circumference
 
   return (
-    <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+    <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-4 md:p-6 backdrop-blur-sm">
       {/* Top Bar */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <span className="text-gray-400 text-sm">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <span className="text-gray-400 text-xs sm:text-sm">
             Pregunta {currentIndex + 1} de {totalQuestions}
           </span>
           {streak > 1 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 border border-orange-500/50 rounded-full">
-              <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-orange-500/10 border border-orange-500/50 rounded-full">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
               </svg>
-              <span className="text-orange-500 font-semibold text-sm">Racha: {streak}</span>
+              <span className="text-orange-500 font-semibold text-xs sm:text-sm">Racha: {streak}</span>
             </div>
           )}
         </div>
 
         {/* Timer */}
-        <div className="relative">
-          <svg className="w-16 h-16 transform -rotate-90">
+        <div className="relative flex-shrink-0">
+          <svg className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 transform -rotate-90">
             <circle
-              cx="32"
-              cy="32"
+              cx="50%"
+              cy="50%"
               r={radius}
               className="stroke-white/10"
               strokeWidth="4"
               fill="none"
             />
             <circle
-              cx="32"
-              cy="32"
+              cx="50%"
+              cy="50%"
               r={radius}
               className={getTimerColor()}
               strokeWidth="4"
@@ -78,27 +78,27 @@ export function QuizQuestion({
               style={{ transition: 'stroke-dashoffset 1s linear' }}
             />
           </svg>
-          <div className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getTimerColor()}`}>
+          <div className={`absolute inset-0 flex items-center justify-center text-base sm:text-lg font-bold ${getTimerColor()}`}>
             {timeRemaining}
           </div>
         </div>
       </div>
 
       {/* Question Text */}
-      <div className="py-6 mb-6 text-center">
-        <h2 className="text-xl md:text-2xl font-semibold text-white leading-relaxed">
+      <div className="py-4 md:py-6 mb-4 md:mb-6 text-center">
+        <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-white leading-relaxed">
           {question.content}
         </h2>
       </div>
 
       {/* Options */}
-      <div className="space-y-3">
+      <div className="space-y-2 md:space-y-3">
         {question.options.map((option, index) => {
           const isCorrect = index === question.correct_index
           const isSelected = selectedIndex === index
           const showResult = isAnswered
 
-          let buttonClasses = 'w-full p-4 rounded-xl border-2 text-left transition-all duration-200 '
+          let buttonClasses = 'w-full min-h-[56px] p-3 md:p-4 rounded-xl border-2 text-left transition-all duration-200 active:scale-[0.98] '
 
           if (!showResult) {
             buttonClasses += 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
@@ -119,7 +119,7 @@ export function QuizQuestion({
             >
               <div className="flex items-center gap-3">
                 <span className={`
-                  flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm
+                  flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm
                   ${showResult && isCorrect ? 'bg-emerald-500 text-white' :
                     showResult && isSelected && !isCorrect ? 'bg-red-500 text-white' :
                     'bg-white/10 text-gray-300'}
@@ -127,6 +127,7 @@ export function QuizQuestion({
                   {letters[index]}
                 </span>
                 <span className={`
+                  text-sm sm:text-base
                   ${showResult && isCorrect ? 'text-emerald-400 font-medium' :
                     showResult && isSelected && !isCorrect ? 'text-red-400' :
                     'text-white'}

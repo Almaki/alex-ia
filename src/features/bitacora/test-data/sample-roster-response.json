@@ -1,0 +1,240 @@
+{
+  "month": 1,
+  "year": 2026,
+  "entries": [
+    {
+      "date": "2026-01-15",
+      "activity_type": "flight",
+      "check_in": "08:00",
+      "check_out": "16:30",
+      "hotel": "Hampton Inn Cancun",
+      "notes": null,
+      "crew_captain": "Juan Perez",
+      "crew_first_officer": "Maria Lopez",
+      "crew_purser": "Ana Garcia",
+      "flights": [
+        {
+          "flight_number": "AM0123",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-ABC",
+          "origin": "MEX",
+          "destination": "CUN",
+          "std": "10:00",
+          "sta": "13:30",
+          "block_hours": 3.5,
+          "is_night": false
+        },
+        {
+          "flight_number": "AM0124",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-ABC",
+          "origin": "CUN",
+          "destination": "MEX",
+          "std": "14:30",
+          "sta": "17:00",
+          "block_hours": 2.5,
+          "is_night": false
+        }
+      ]
+    },
+    {
+      "date": "2026-01-16",
+      "activity_type": "off",
+      "check_in": null,
+      "check_out": null,
+      "hotel": null,
+      "notes": "Dia libre",
+      "crew_captain": null,
+      "crew_first_officer": null,
+      "crew_purser": null,
+      "flights": []
+    },
+    {
+      "date": "2026-01-17",
+      "activity_type": "sim",
+      "check_in": "14:00",
+      "check_out": "18:00",
+      "hotel": null,
+      "notes": "Recurrent training - CATIII approach",
+      "crew_captain": null,
+      "crew_first_officer": null,
+      "crew_purser": null,
+      "flights": []
+    },
+    {
+      "date": "2026-01-18",
+      "activity_type": "flight",
+      "check_in": "05:30",
+      "check_out": "22:00",
+      "hotel": "Hilton Guadalajara",
+      "notes": "Long duty day",
+      "crew_captain": "Carlos Martinez",
+      "crew_first_officer": "Laura Rodriguez",
+      "crew_purser": "Sofia Hernandez",
+      "flights": [
+        {
+          "flight_number": "AM0301",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-DEF",
+          "origin": "MEX",
+          "destination": "GDL",
+          "std": "07:00",
+          "sta": "08:30",
+          "block_hours": 1.5,
+          "is_night": false
+        },
+        {
+          "flight_number": "AM0302",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-DEF",
+          "origin": "GDL",
+          "destination": "TIJ",
+          "std": "09:30",
+          "sta": "11:00",
+          "block_hours": 1.5,
+          "is_night": false
+        },
+        {
+          "flight_number": "AM0303",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-DEF",
+          "origin": "TIJ",
+          "destination": "GDL",
+          "std": "12:00",
+          "sta": "13:30",
+          "block_hours": 1.5,
+          "is_night": false
+        },
+        {
+          "flight_number": "AM0304",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-DEF",
+          "origin": "GDL",
+          "destination": "MEX",
+          "std": "20:00",
+          "sta": "21:30",
+          "block_hours": 1.5,
+          "is_night": true
+        }
+      ]
+    },
+    {
+      "date": "2026-01-19",
+      "activity_type": "standby",
+      "check_in": "10:00",
+      "check_out": "18:00",
+      "hotel": null,
+      "notes": "Airport standby",
+      "crew_captain": null,
+      "crew_first_officer": null,
+      "crew_purser": null,
+      "flights": []
+    },
+    {
+      "date": "2026-01-20",
+      "activity_type": "vacation",
+      "check_in": null,
+      "check_out": null,
+      "hotel": null,
+      "notes": "Personal vacation",
+      "crew_captain": null,
+      "crew_first_officer": null,
+      "crew_purser": null,
+      "flights": []
+    },
+    {
+      "date": "2026-01-21",
+      "activity_type": "vacation",
+      "check_in": null,
+      "check_out": null,
+      "hotel": null,
+      "notes": "Personal vacation",
+      "crew_captain": null,
+      "crew_first_officer": null,
+      "crew_purser": null,
+      "flights": []
+    },
+    {
+      "date": "2026-01-22",
+      "activity_type": "training",
+      "check_in": "09:00",
+      "check_out": "17:00",
+      "hotel": null,
+      "notes": "Dangerous goods recurrent",
+      "crew_captain": null,
+      "crew_first_officer": null,
+      "crew_purser": null,
+      "flights": []
+    },
+    {
+      "date": "2026-01-23",
+      "activity_type": "flight",
+      "check_in": "06:00",
+      "check_out": "15:30",
+      "hotel": null,
+      "notes": null,
+      "crew_captain": "Ricardo Torres",
+      "crew_first_officer": "Patricia Gomez",
+      "crew_purser": "Isabel Diaz",
+      "flights": [
+        {
+          "flight_number": "AM0567",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-GHI",
+          "origin": "MEX",
+          "destination": "MTY",
+          "std": "08:00",
+          "sta": "09:30",
+          "block_hours": 1.5,
+          "is_night": false
+        },
+        {
+          "flight_number": "AM0568",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-GHI",
+          "origin": "MTY",
+          "destination": "CUN",
+          "std": "10:30",
+          "sta": "13:00",
+          "block_hours": 2.5,
+          "is_night": false
+        }
+      ]
+    },
+    {
+      "date": "2026-01-24",
+      "activity_type": "flight",
+      "check_in": "04:30",
+      "check_out": "12:00",
+      "hotel": null,
+      "notes": "Early morning departure",
+      "crew_captain": "Miguel Sanchez",
+      "crew_first_officer": "Gabriela Ruiz",
+      "crew_purser": "Carmen Flores",
+      "flights": [
+        {
+          "flight_number": "AM0789",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-JKL",
+          "origin": "MEX",
+          "destination": "LAX",
+          "std": "06:00",
+          "sta": "08:30",
+          "block_hours": 4.5,
+          "is_night": false
+        },
+        {
+          "flight_number": "AM0790",
+          "aircraft_type": "A320",
+          "aircraft_registration": "XA-JKL",
+          "origin": "LAX",
+          "destination": "MEX",
+          "std": "09:30",
+          "sta": "15:00",
+          "block_hours": 4.5,
+          "is_night": false
+        }
+      ]
+    }
+  ]
+}

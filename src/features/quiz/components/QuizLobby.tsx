@@ -35,35 +35,35 @@ export function QuizLobby({ stats, onStart, error }: QuizLobbyProps) {
   }
 
   return (
-    <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
+    <div className="bg-gray-900/50 border border-white/10 rounded-2xl p-4 sm:p-6 md:p-8 backdrop-blur-sm">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+      <div className="text-center mb-6 md:mb-8">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
           Quiz Arena
         </h1>
-        <p className="text-gray-400">Pon a prueba tus conocimientos de aviacion</p>
+        <p className="text-sm md:text-base text-gray-400">Pon a prueba tus conocimientos de aviacion</p>
       </div>
 
       {/* Stats Bar */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-4 bg-white/5 rounded-xl border border-white/5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8 p-3 md:p-4 bg-white/5 rounded-xl border border-white/5">
           <div className="text-center">
-            <div className="text-2xl font-bold text-white">{stats.elo_rating}</div>
-            <div className={`text-sm ${currentRank.color} font-medium`}>
+            <div className="text-xl md:text-2xl font-bold text-white">{stats.elo_rating}</div>
+            <div className={`text-xs md:text-sm ${currentRank.color} font-medium`}>
               {currentRank.label}
             </div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-white">{stats.total_sessions}</div>
-            <div className="text-sm text-gray-400">Sesiones</div>
+            <div className="text-xl md:text-2xl font-bold text-white">{stats.total_sessions}</div>
+            <div className="text-xs md:text-sm text-gray-400">Sesiones</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-white">{accuracy}%</div>
-            <div className="text-sm text-gray-400">Precision</div>
+            <div className="text-xl md:text-2xl font-bold text-white">{accuracy}%</div>
+            <div className="text-xs md:text-sm text-gray-400">Precision</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-white">{stats.best_streak}</div>
-            <div className="text-sm text-gray-400">Mejor Racha</div>
+            <div className="text-xl md:text-2xl font-bold text-white">{stats.best_streak}</div>
+            <div className="text-xs md:text-sm text-gray-400">Mejor Racha</div>
           </div>
         </div>
       )}
@@ -73,7 +73,7 @@ export function QuizLobby({ stats, onStart, error }: QuizLobbyProps) {
         <label className="block text-sm font-medium text-gray-300 mb-3">
           Dificultad
         </label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {DIFFICULTY_OPTIONS.map((option) => {
             const isSelected = selectedDifficulty === option.value
             const colorClass = difficultyColorMap[option.color]
@@ -83,17 +83,17 @@ export function QuizLobby({ stats, onStart, error }: QuizLobbyProps) {
                 key={option.value}
                 onClick={() => setSelectedDifficulty(option.value)}
                 className={`
-                  p-4 rounded-xl border-2 transition-all duration-200
+                  min-h-[60px] p-3 md:p-4 rounded-xl border-2 transition-all duration-200
                   ${isSelected
                     ? `border-${colorClass} bg-${colorClass}/10 ring-2 ring-${colorClass}/50 shadow-lg shadow-${colorClass}/20`
                     : 'border-white/10 bg-white/5 hover:bg-white/10'
                   }
                 `}
               >
-                <div className={`text-lg font-bold ${isSelected ? `text-${colorClass}` : 'text-white'}`}>
+                <div className={`text-base md:text-lg font-bold ${isSelected ? `text-${colorClass}` : 'text-white'}`}>
                   {option.label}
                 </div>
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-gray-400 mt-1 hidden sm:block">
                   {option.description}
                 </div>
               </button>
@@ -123,7 +123,7 @@ export function QuizLobby({ stats, onStart, error }: QuizLobbyProps) {
       {/* Start Button */}
       <button
         onClick={handleStart}
-        className="w-full py-4 px-6 bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
+        className="w-full min-h-[48px] py-3 md:py-4 px-6 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-base md:text-lg font-semibold rounded-xl hover:from-purple-600 hover:to-blue-600 active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl hover:shadow-purple-500/20"
       >
         Iniciar Quiz
       </button>

@@ -131,10 +131,8 @@ export function useStudyPlan() {
   }, [])
 
   const cancelCreating = useCallback(() => {
-    if (!state.plan) {
-      dispatch({ type: 'SET_NO_PLAN' })
-    }
-  }, [state.plan])
+    dispatch({ type: 'SET_NO_PLAN' })
+  }, [])
 
   const submitPlan = useCallback(async (form: CreatePlanForm) => {
     dispatch({ type: 'SET_SAVING', saving: true })
@@ -252,6 +250,42 @@ export function useStudyPlan() {
     dispatch({ type: 'SET_SAVING', saving: false })
   }, [state.plan])
 
+  const handleDeletePlan = useCallback(async () => {
+    if (!state.plan) return
+
+    dispatch({ type: 'SET_SAVING', saving: true })
+
+    const { error } = await deletePlan(state.plan.id)
+
+    if (error) {
+      dispatch({ type: 'SET_ERROR', error })
+      return
+    }
+
+    dispatch({ type: 'SET_NO_PLAN' })
+    dispatch({ type: 'SET_SAVING', saving: false })
+  }, [state.plan])
+
+  const handleNewPlan = useCallback(async () => {
+    if (!state.plan) {
+      dispatch({ type: 'SET_CREATING' })
+      return
+    }
+
+    // Archive current plan first, then go to creating
+    dispatch({ type: 'SET_SAVING', saving: true })
+
+    const { error } = await archivePlan(state.plan.id)
+
+    if (error) {
+      dispatch({ type: 'SET_ERROR', error })
+      return
+    }
+
+    dispatch({ type: 'SET_SAVING', saving: false })
+    dispatch({ type: 'SET_CREATING' })
+  }, [state.plan])
+
   const selectWeek = useCallback((week: number | null) => {
     dispatch({ type: 'SELECT_WEEK', week })
   }, [])
@@ -286,6 +320,8 @@ export function useStudyPlan() {
     recordSession,
     handleCompletePlan,
     handleArchivePlan,
+    handleDeletePlan,
+    handleNewPlan,
     selectWeek,
   }
 }

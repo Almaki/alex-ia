@@ -9,7 +9,7 @@ import { WellnessConversationList } from './WellnessConversationList'
 import type { WellnessMessage as WellnessMessageType } from '../types'
 
 export function WellnessInterface() {
-  const { messages, status, conversationId, error, sendMessage, stopStreaming, loadConversation, newChat } = useWellnessChat()
+  const { messages, status, conversationId, error, responseMode, sendMessage, stopStreaming, loadConversation, newChat, setResponseMode } = useWellnessChat()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Auto scroll to bottom on new messages
@@ -23,7 +23,7 @@ export function WellnessInterface() {
   }, [loadConversation])
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-[calc(100dvh-4rem)]">
       {/* Sidebar - Conversation history */}
       <div className="hidden w-64 shrink-0 border-r border-white/10 bg-gray-950/50 md:block">
         <WellnessConversationList
@@ -36,20 +36,39 @@ export function WellnessInterface() {
       {/* Main wellness area */}
       <div className="flex flex-1 flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 border-b border-white/10 bg-gray-950/80 backdrop-blur-sm px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-sm font-bold text-white">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="flex items-center gap-3 border-b border-white/10 bg-gray-950/80 backdrop-blur-sm px-3 py-2.5 md:px-4 md:py-3">
+          <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-sm font-bold text-white">
+            <svg className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-white">Bienestar</h2>
+            <h2 className="text-xs md:text-sm font-semibold text-white">Bienestar</h2>
             <p className="text-xs text-gray-500">Tu espacio de calma y apoyo emocional</p>
+          </div>
+
+          {/* Response Mode Toggle */}
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              type="button"
+              onClick={() => setResponseMode(responseMode === 'concise' ? 'detailed' : 'concise')}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                responseMode === 'detailed' ? 'bg-emerald-600' : 'bg-gray-600'
+              }`}
+              aria-label="Toggle response mode"
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                responseMode === 'detailed' ? 'translate-x-6' : 'translate-x-1'
+              }`} />
+            </button>
+            <span className="text-xs text-gray-400 hidden sm:inline">
+              {responseMode === 'concise' ? 'Directa' : 'Detallada'}
+            </span>
           </div>
         </div>
 
         {/* Messages area */}
-        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+        <div className="flex-1 overflow-y-auto px-3 py-4 md:px-4 md:py-6 space-y-4">
           {messages.length === 0 && (
             <div className="flex h-full items-center justify-center">
               <div className="text-center space-y-4 max-w-md">

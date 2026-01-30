@@ -17,11 +17,14 @@ export interface ChatConversation {
 
 export type ChatStatus = 'idle' | 'sending' | 'streaming' | 'error'
 
+export type ResponseMode = 'concise' | 'detailed'
+
 export interface ChatState {
   messages: ChatMessage[]
   status: ChatStatus
   conversationId: string | null
   error: string | null
+  responseMode: ResponseMode
 }
 
 export type ChatAction =
@@ -32,4 +35,5 @@ export type ChatAction =
   | { type: 'SET_ERROR'; error: string }
   | { type: 'SET_CONVERSATION_ID'; id: string }
   | { type: 'LOAD_MESSAGES'; messages: ChatMessage[]; conversationId: string }
+  | { type: 'SET_RESPONSE_MODE'; mode: ResponseMode }
   | { type: 'RESET' }

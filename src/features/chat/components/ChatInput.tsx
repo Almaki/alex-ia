@@ -39,7 +39,7 @@ export function ChatInput({ onSend, onStop, status }: ChatInputProps) {
   }
 
   return (
-    <div className="border-t border-white/10 bg-gray-950/80 backdrop-blur-sm p-4">
+    <div className="border-t border-white/10 bg-gray-950/80 backdrop-blur-sm px-3 py-3 md:px-4 md:py-4">
       <div className="flex items-end gap-2">
         <textarea
           ref={textareaRef}
@@ -49,7 +49,7 @@ export function ChatInput({ onSend, onStop, status }: ChatInputProps) {
           onInput={handleInput}
           placeholder="Escribe tu pregunta de aviacion..."
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+          className="flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 md:px-4 md:py-3 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
           disabled={isDisabled}
         />
 
@@ -57,7 +57,7 @@ export function ChatInput({ onSend, onStop, status }: ChatInputProps) {
           <button
             type="button"
             onClick={onStop}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white hover:bg-red-700 transition-colors"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-red-600 text-white hover:bg-red-700 active:bg-red-800 transition-colors"
             aria-label="Detener"
           >
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
@@ -69,7 +69,7 @@ export function ChatInput({ onSend, onStop, status }: ChatInputProps) {
             type="button"
             onClick={handleSubmit}
             disabled={!value.trim() || isDisabled}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex h-11 w-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             aria-label="Enviar"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -14,11 +14,14 @@ export interface WellnessConversation {
 
 export type WellnessStatus = 'idle' | 'sending' | 'streaming' | 'error'
 
+export type ResponseMode = 'concise' | 'detailed'
+
 export interface WellnessState {
   messages: WellnessMessage[]
   status: WellnessStatus
   conversationId: string | null
   error: string | null
+  responseMode: ResponseMode
 }
 
 export type WellnessAction =
@@ -29,4 +32,5 @@ export type WellnessAction =
   | { type: 'SET_ERROR'; error: string }
   | { type: 'SET_CONVERSATION_ID'; id: string }
   | { type: 'LOAD_MESSAGES'; messages: WellnessMessage[]; conversationId: string }
+  | { type: 'SET_RESPONSE_MODE'; mode: ResponseMode }
   | { type: 'RESET' }

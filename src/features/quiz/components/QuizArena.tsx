@@ -10,7 +10,7 @@ export function QuizArena() {
   const { state, startQuiz, selectAnswer, playAgain } = useQuiz()
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-2xl px-4 py-4 md:py-8">
       {state.phase === 'lobby' && (
         <QuizLobby
           stats={state.stats}

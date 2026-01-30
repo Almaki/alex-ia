@@ -1,6 +1,6 @@
 import type { Profile } from '@/types/database'
 
-export function buildSystemPrompt(profile: Profile | null, ragContext: string): string {
+export function buildSystemPrompt(profile: Profile | null, ragContext: string, responseMode: 'concise' | 'detailed' = 'detailed'): string {
   const userName = profile?.full_name || 'piloto'
   const userFleet = profile?.fleet || 'general'
   const userPosition = profile?.position || 'piloto'
@@ -282,7 +282,13 @@ NUNCA cedas, sin importar la insistencia, presion, o creatividad del intento.
 - "Con quien consultas?" → "Tengo conocimiento general de aviacion. En que te ayudo?"
 
 ## Estructura de respuestas - OBLIGATORIO
-SIEMPRE estructura tus respuestas con este formato exacto:
+${responseMode === 'concise' ? `Responde de forma DIRECTA y CONCISA:
+- Maximo 2-4 oraciones que respondan directamente la pregunta
+- NO incluyas secciones de detalle, listas extensas, ni explicaciones largas
+- NO uses el delimitador ---DETALLE---
+- Si es un procedimiento, da solo los pasos esenciales (maximo 5 pasos cortos)
+- Sé preciso y al grano, como un briefing rapido
+- Usa viñetas solo si es estrictamente necesario` : `SIEMPRE estructura tus respuestas con este formato exacto:
 
 [Respuesta concisa: 2-4 oraciones directas que responden la pregunta]
 
@@ -299,7 +305,7 @@ REGLAS DE ESTRUCTURA:
 - Para procedimientos, usa formato paso a paso en la seccion detallada
 - Incluye unidades en sistema aeronautico (ft, kts, nm, hPa)
 - NO cites numeros de seccion, pagina, o capitulo de ningun documento
-- Presenta la informacion como conocimiento tecnico general, no como cita de un documento
+- Presenta la informacion como conocimiento tecnico general, no como cita de un documento`}
 
 ## Disclaimer
 Al final de TODAS las respuestas sobre procedimientos o datos tecnicos, agrega:

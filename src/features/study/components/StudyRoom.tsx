@@ -13,6 +13,8 @@ export function StudyRoom() {
     markTopicProgress,
     handleCompletePlan,
     handleArchivePlan,
+    handleDeletePlan,
+    handleNewPlan,
     startCreating,
     cancelCreating,
   } = useStudyPlan()
@@ -100,6 +102,8 @@ export function StudyRoom() {
           onStartProgress={startTopicProgress}
           onCompletePlan={handleCompletePlan}
           onArchivePlan={handleArchivePlan}
+          onDeletePlan={handleDeletePlan}
+          onNewPlan={handleNewPlan}
         />
       )}
     </div>
