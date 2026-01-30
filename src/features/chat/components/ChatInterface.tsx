@@ -8,14 +8,57 @@ import { ChatInput } from './ChatInput'
 import { ConversationList } from './ConversationList'
 import type { ChatMessage } from '../types'
 
+const STUDY_CATEGORY_LABELS: Record<string, string> = {
+  systems: 'Sistemas',
+  aerodynamics: 'Aerodinamica',
+  meteorology: 'Meteorologia',
+  regulations: 'Regulaciones',
+  procedures: 'Procedimientos',
+  performance: 'Performance',
+  navigation: 'Navegacion',
+  human_factors: 'Factores Humanos',
+  emergency: 'Emergencias',
+}
+
+const DIFFICULTY_LABELS: Record<number, string> = {
+  1: 'Basico',
+  2: 'Intermedio',
+  3: 'Avanzado',
+}
+
 export function ChatInterface() {
   const { messages, status, conversationId, error, responseMode, sendMessage, stopStreaming, loadConversation, newChat, setResponseMode } = useChat()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const studyAutoSentRef = useRef(false)
 
   // Auto scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Read study_topic from sessionStorage and auto-send contextual message
+  useEffect(() => {
+    if (studyAutoSentRef.current) return
+
+    const raw = sessionStorage.getItem('study_topic')
+    if (!raw) return
+
+    try {
+      const topic = JSON.parse(raw) as { topicId: string; category: string; difficulty: number }
+      sessionStorage.removeItem('study_topic')
+      studyAutoSentRef.current = true
+
+      const categoryLabel = STUDY_CATEGORY_LABELS[topic.category] || topic.category
+      const difficultyLabel = DIFFICULTY_LABELS[topic.difficulty] || 'Intermedio'
+
+      const prompt = `Estoy estudiando "${categoryLabel}" a nivel ${difficultyLabel} como parte de mi plan de estudio. Explicame los conceptos clave y puntos importantes que debo dominar sobre este tema para mi operacion como piloto.`
+
+      // Small delay to ensure chat is ready
+      setTimeout(() => sendMessage(prompt), 300)
+    } catch {
+      // ignore malformed data
+    }
+  }, [sendMessage])
 
   const handleSelectConversation = useCallback(async (id: string) => {
     const msgs = await getMessages(id)

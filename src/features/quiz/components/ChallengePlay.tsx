@@ -21,8 +21,8 @@ export function ChallengePlay({
   opponentProgress,
   onSelectAnswer
 }: ChallengePlayProps) {
-  const myProgress = ((questionIndex + 1) / totalQuestions) * 100
-  const opponentProgressPercent = (opponentProgress / totalQuestions) * 100
+  const myProgress = Math.min(((questionIndex + 1) / totalQuestions) * 100, 100)
+  const opponentProgressPercent = Math.min((opponentProgress / totalQuestions) * 100, 100)
 
   const radius = 32
   const circumference = 2 * Math.PI * radius
@@ -50,7 +50,7 @@ export function ChallengePlay({
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-white">Oponente</span>
-              <span className="text-sm text-gray-400">{opponentProgress}/{totalQuestions}</span>
+              <span className="text-sm text-gray-400">{Math.min(opponentProgress, totalQuestions)}/{totalQuestions}</span>
             </div>
             <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
               <motion.div

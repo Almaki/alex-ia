@@ -22,14 +22,14 @@ export function ChallengeResults({
 }: ChallengeResultsProps) {
   const isChallenger = myId === challenge.challenger_id
 
-  const myScore = isChallenger ? challenge.challenger_correct : challenge.opponent_correct
-  const opponentScore = isChallenger ? challenge.opponent_correct : challenge.challenger_correct
+  const myScore = (isChallenger ? challenge.challenger_correct : challenge.opponent_correct) ?? 0
+  const opponentScore = (isChallenger ? challenge.opponent_correct : challenge.challenger_correct) ?? 0
 
-  const myTime = isChallenger ? challenge.challenger_total_time : challenge.opponent_total_time
-  const opponentTime = isChallenger ? challenge.opponent_total_time : challenge.challenger_total_time
+  const myTime = (isChallenger ? challenge.challenger_total_time : challenge.opponent_total_time) ?? 0
+  const opponentTime = (isChallenger ? challenge.opponent_total_time : challenge.challenger_total_time) ?? 0
 
-  const myEloChange = isChallenger ? challenge.challenger_elo_change : challenge.opponent_elo_change
-  const opponentEloChange = isChallenger ? challenge.opponent_elo_change : challenge.challenger_elo_change
+  const myEloChange = (isChallenger ? challenge.challenger_elo_change : challenge.opponent_elo_change) ?? 0
+  const opponentEloChange = (isChallenger ? challenge.opponent_elo_change : challenge.challenger_elo_change) ?? 0
 
   const myName = isChallenger ? challengerName : opponentName
   const oppName = isChallenger ? opponentName : challengerName

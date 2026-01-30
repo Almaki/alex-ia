@@ -203,28 +203,78 @@ export function BitacoraPage() {
           {/* Today's flights */}
           {todayEntry.flights && todayEntry.flights.length > 0 && (
             <div className="space-y-2">
-              {todayEntry.flights.map((flight) => (
-                <div key={flight.id} className="flex items-center gap-3 bg-black/20 rounded-lg p-3">
-                  <div className="text-xs font-mono font-bold text-amber-400 w-16 shrink-0">
-                    {flight.flight_number || '-'}
+              {todayEntry.flights.map((flight) => {
+                const isEditing = editingFlight === flight.id
+
+                return (
+                  <div key={flight.id} className="bg-black/20 rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs font-mono font-bold text-amber-400 w-16 shrink-0">
+                        {flight.flight_number || '-'}
+                      </div>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className="text-sm font-bold text-white">{flight.origin}</span>
+                        <svg className="w-4 h-4 text-amber-500/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                        <span className="text-sm font-bold text-white">{flight.destination}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 shrink-0">
+                        {formatHHMM(flight.std)}{flight.std && flight.sta && ' - '}{formatHHMM(flight.sta)}
+                      </div>
+                      {!isEditing ? (
+                        <button
+                          onClick={() => startEditFlight(flight.id, flight.block_hours, flight.flight_hours)}
+                          className="text-xs font-medium text-purple-400 shrink-0 hover:text-purple-300 transition-colors px-2 py-1 rounded hover:bg-purple-500/10"
+                          title="Editar horas"
+                        >
+                          {flight.block_hours != null ? formatDecimalHours(flight.block_hours) : '--:--'}
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[9px] text-gray-500">BLK</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editValues.block_hours}
+                              onChange={(e) => setEditValues((v) => ({ ...v, block_hours: e.target.value }))}
+                              className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[9px] text-gray-500">FLT</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editValues.flight_hours}
+                              onChange={(e) => setEditValues((v) => ({ ...v, flight_hours: e.target.value }))}
+                              className="w-16 px-1.5 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-white focus:border-amber-500 focus:outline-none"
+                              placeholder="0.00"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1 ml-1">
+                            <button
+                              onClick={handleSaveFlight}
+                              disabled={saving}
+                              className="px-2 py-1 text-[10px] font-medium bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                            >
+                              {saving ? '...' : 'OK'}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="px-2 py-1 text-[10px] font-medium text-gray-400 rounded hover:bg-white/10 transition-colors"
+                            >
+                              X
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="text-sm font-bold text-white">{flight.origin}</span>
-                    <svg className="w-4 h-4 text-amber-500/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                    <span className="text-sm font-bold text-white">{flight.destination}</span>
-                  </div>
-                  <div className="text-xs text-gray-400 shrink-0">
-                    {formatHHMM(flight.std)}{flight.std && flight.sta && ' - '}{formatHHMM(flight.sta)}
-                  </div>
-                  {flight.block_hours != null && (
-                    <span className="text-xs font-medium text-purple-400 shrink-0">
-                      {formatDecimalHours(flight.block_hours)}
-                    </span>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
 

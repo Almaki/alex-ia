@@ -45,13 +45,18 @@ export function ChallengeToast({
       const expiry = new Date(expiresAt).getTime()
       const remaining = Math.max(0, Math.floor((expiry - now) / 1000))
       setTimeLeft(remaining)
+
+      if (remaining <= 0) {
+        clearInterval(interval)
+        onDecline()
+      }
     }
 
     updateTimer()
     const interval = setInterval(updateTimer, 1000)
 
     return () => clearInterval(interval)
-  }, [expiresAt])
+  }, [expiresAt, onDecline])
 
   const getRank = (elo: number) => {
     for (let i = ELO_RANKS.length - 1; i >= 0; i--) {

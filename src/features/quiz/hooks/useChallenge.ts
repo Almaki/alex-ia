@@ -99,7 +99,7 @@ function challengeReducer(state: ChallengeState, action: ChallengeAction): Chall
       }
 
     case 'TICK_COUNTDOWN':
-      return { ...state, countdown: state.countdown - 1 }
+      return { ...state, countdown: Math.max(0, state.countdown - 1) }
 
     case 'START_PLAYING':
       return {
